@@ -176,7 +176,7 @@ struct ModuleHeader<Actions: View>: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            IconTile(symbol: module.symbol, tint: Palette.accent, size: 48)
+            IconTile(symbol: module.symbol, tint: module.tint, size: 48)
             VStack(alignment: .leading, spacing: 5) {
                 Text(title)
                     .font(.system(size: 27, weight: .bold, design: .rounded))
@@ -290,6 +290,201 @@ struct EmptyStateView: View {
     }
 }
 
+extension ModuleID {
+    /// The colour that stands for this module in headers, cards and summaries.
+    var tint: Color {
+        switch self {
+        case .overview, .health, .disk, .loginItems: return Palette.accent
+        case .maintenance: return Palette.amber
+        case .uninstaller: return Palette.blue
+        case .updater, .power: return Palette.green
+        case .privacy, .extensions: return Palette.violet
+        case .permanentDelete: return Palette.coral
+        }
+    }
+}
+
+/// One small labelled value on the right side of a `SummaryCard`.
+struct SummaryFact: Identifiable {
+    var id: String { label }
+    var icon: String
+    var label: String
+    var value: String
+    var tint: Color
+    var help: String?
+    var action: (() -> Void)?
+}
+
+/// The summary at the top of a module: one main number on the left, an
+/// optional middle block (such as the selection), and small facts on the right.
+struct SummaryCard<Middle: View>: View {
+    var label: String
+    var value: String
+    var caption: String?
+    var facts: [SummaryFact]
+    var middle: Middle
+
+    init(label: String, value: String, caption: String? = nil, facts: [SummaryFact], @ViewBuilder middle: () -> Middle) {
+        self.label = label
+        self.value = value
+        self.caption = caption
+        self.facts = facts
+        self.middle = middle()
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 22) {
+            VStack(alignment: .leading, spacing: 4) {
+                SummaryLabel(text: label)
+                Text(value)
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .tracking(-0.8)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                if let caption {
+                    Text(caption)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .layoutPriority(1)
+            if Middle.self != EmptyView.self {
+                Divider().frame(height: 64).opacity(0.5)
+                middle
+            }
+            Spacer(minLength: 12)
+            if facts.count >= 4 {
+                HStack(alignment: .top, spacing: 20) {
+                    factColumn(Array(facts.enumerated().filter { $0.offset % 2 == 0 }.map(\.element)))
+                    factColumn(Array(facts.enumerated().filter { $0.offset % 2 == 1 }.map(\.element)))
+                }
+            } else {
+                factColumn(facts)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: 16, radius: 16)
+    }
+
+    private func factColumn(_ column: [SummaryFact]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(column.enumerated()), id: \.element.id) { index, fact in
+                if index > 0 { Divider().opacity(0.4) }
+                SummaryFactRow(fact: fact)
+            }
+        }
+        .frame(width: 250)
+    }
+}
+
+extension SummaryCard where Middle == EmptyView {
+    init(label: String, value: String, caption: String? = nil, facts: [SummaryFact]) {
+        self.init(label: label, value: value, caption: caption, facts: facts) { EmptyView() }
+    }
+}
+
+/// The selected count and size with a Select All button, for a `SummaryCard`.
+struct SelectionSummary: View {
+    var count: Int
+    var bytes: Int64?
+    var onSelectAll: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            SummaryLabel(text: L("Selected"))
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(count)")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                if let bytes {
+                    Text(Fmt.bytes(bytes))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Button(action: onSelectAll) {
+                Label(L("Select All"), systemImage: "checkmark.circle")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+}
+
+/// The small uppercase label used above summary values.
+struct SummaryLabel: View {
+    var text: String
+    var body: some View {
+        Text(text)
+            .font(.system(size: 10.5, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
+            .tracking(0.4)
+            .lineLimit(1)
+    }
+}
+
+struct SummaryFactRow: View {
+    var fact: SummaryFact
+
+    var body: some View {
+        if let action = fact.action {
+            Button(action: action) { row(chevron: true) }
+                .buttonStyle(.plain)
+                .help(fact.help ?? "")
+        } else {
+            row(chevron: false)
+                .help(fact.help ?? "")
+        }
+    }
+
+    private func row(chevron: Bool) -> some View {
+        HStack(spacing: 10) {
+            IconTile(symbol: fact.icon, tint: fact.tint, size: 26)
+            Text(fact.label)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            Text(fact.value)
+                .font(.system(size: 13, weight: .semibold, design: .rounded).monospacedDigit())
+                .lineLimit(1)
+                .fixedSize()
+                .layoutPriority(1)
+            if chevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 7)
+        .contentShape(Rectangle())
+    }
+}
+
+/// A one-line explanation for information that needs no action. Warnings
+/// and anything with a button keep using `BannerView`.
+struct InfoNote: View {
+    var icon: String
+    var title: String
+    var message: String
+    var tint: Color = Palette.blue
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(tint)
+            (Text(title).fontWeight(.semibold).foregroundColor(.primary) + Text("  ") + Text(message).foregroundColor(.secondary))
+                .font(.system(size: 11))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+    }
+}
+
 struct MetricTile: View {
     var icon: String
     var label: String
@@ -307,7 +502,7 @@ struct MetricTile: View {
                 Text(caption).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(2)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .card(padding: 14, radius: 14)
     }
 }

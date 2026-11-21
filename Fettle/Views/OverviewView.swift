@@ -382,19 +382,7 @@ struct ModuleStatusCard: View {
     @Environment(\.colorScheme) private var scheme
     @State private var hovering = false
 
-    private var tint: Color {
-        switch module {
-        case .disk: return Palette.accent
-        case .maintenance: return Palette.amber
-        case .uninstaller: return Palette.blue
-        case .updater: return Palette.green
-        case .privacy: return Palette.violet
-        case .extensions: return Palette.violet
-        case .loginItems: return Palette.accent
-        case .power: return Palette.green
-        default: return Palette.accent
-        }
-    }
+    private var tint: Color { module.tint }
 
     var body: some View {
         Button(action: action) {

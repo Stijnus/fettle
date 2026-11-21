@@ -42,11 +42,10 @@ struct MaintenanceView: View {
                 stats(report)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 10)
-                BannerView(
+                InfoNote(
                     icon: "shield.lefthalf.filled",
                     title: L("Repair is limited to your own aliases, personal LaunchAgents and confirmed leftovers."),
-                    message: L("System files, live preferences and security settings are never changed."),
-                    tint: Palette.blue
+                    message: L("System files, live preferences and security settings are never changed.")
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 6)
@@ -101,12 +100,18 @@ struct MaintenanceView: View {
     }
 
     private func stats(_ report: ScanReport) -> some View {
-        HStack(spacing: 10) {
-            MetricTile(icon: "link.badge.plus", label: L("Broken aliases"), value: "\(model.brokenAliases.count)", caption: L("User-owned links only"), tint: Palette.amber)
-            MetricTile(icon: "bolt.slash", label: L("Invalid startup agents"), value: "\(model.invalidAgents.count)", caption: L("Personal LaunchAgents"), tint: Palette.coral)
-            MetricTile(icon: "questionmark.folder", label: L("Confirmed leftovers"), value: "\(model.leftovers.count)", caption: Fmt.bytes(model.leftovers.reduce(0) { $0 + $1.size }), tint: Palette.violet)
-            MetricTile(icon: "info.circle", label: L("Uncertain items"), value: "\(model.uncertain.count)", caption: L("Kept informational"), tint: .secondary)
-        }
+        let fixable = model.brokenAliases.count + model.invalidAgents.count + model.leftovers.count
+        return SummaryCard(
+            label: L("Findings"),
+            value: "\(fixable)",
+            caption: Fmt.bytes(model.leftovers.reduce(0) { $0 + $1.size }),
+            facts: [
+                SummaryFact(icon: "link.badge.plus", label: L("Broken aliases"), value: "\(model.brokenAliases.count)", tint: Palette.amber, help: L("User-owned links only")),
+                SummaryFact(icon: "bolt.slash", label: L("Invalid startup agents"), value: "\(model.invalidAgents.count)", tint: Palette.coral, help: L("Personal LaunchAgents")),
+                SummaryFact(icon: "questionmark.folder", label: L("Confirmed leftovers"), value: "\(model.leftovers.count)", tint: Palette.violet),
+                SummaryFact(icon: "info.circle", label: L("Uncertain items"), value: "\(model.uncertain.count)", tint: .secondary, help: L("Kept informational"))
+            ]
+        )
     }
 
     private var resultsList: some View {

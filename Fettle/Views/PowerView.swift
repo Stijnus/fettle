@@ -45,12 +45,15 @@ struct PowerView: View {
                             .controlSize(.small)
                     }
                     .card(padding: 12, radius: 12)
-                    HStack(spacing: 12) {
-                        MetricTile(icon: "battery.75", label: L("Battery"), value: snapshot.batteryPercent ?? "—", caption: snapshot.batteryDescription, tint: Palette.green)
-                        MetricTile(icon: "clock", label: L("Battery details"), value: snapshot.batteryTimeRemaining ?? "—", caption: L("Battery health is in System Settings."), tint: Palette.blue)
-                        MetricTile(icon: "powerplug", label: L("Power adapter"), value: snapshot.differences.isEmpty ? L("Same as battery") : "\(snapshot.differences.count) " + L("Differences"), caption: L("Battery mode vs. power adapter"), tint: Palette.amber)
-                        MetricTile(icon: "eye", label: L("Read-only"), value: L("No changes"), caption: L("Read from pmset"), tint: Palette.violet)
-                    }
+                    SummaryCard(
+                        label: L("Battery"),
+                        value: snapshot.batteryPercent ?? "—",
+                        caption: snapshot.batteryDescription,
+                        facts: [
+                            SummaryFact(icon: "clock", label: L("Battery details"), value: snapshot.batteryTimeRemaining ?? "—", tint: Palette.blue, help: L("Battery health is in System Settings.")),
+                            SummaryFact(icon: "powerplug", label: L("Power adapter"), value: snapshot.differences.isEmpty ? L("Same as battery") : L("%d differences", snapshot.differences.count), tint: Palette.amber, help: L("Battery mode vs. power adapter"))
+                        ]
+                    )
                     differencesCard(snapshot)
                     allSettingsCard(snapshot)
                     filesCard(snapshot)

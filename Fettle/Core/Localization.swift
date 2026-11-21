@@ -138,6 +138,8 @@ enum L10n {
         "Last scan": "Laatste scan",
         "Never scanned": "Nog nooit gescand",
         "Not scanned yet": "Nog niet gescand",
+        "Browser data": "Browsergegevens",
+        "%d differences": "%d verschillen",
         "1 minute ago": "1 minuut geleden",
         "1 hour ago": "1 uur geleden",
         "1 associated file": "1 bijbehorend bestand",

@@ -62,12 +62,15 @@ struct LoginItemsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        HStack(spacing: 10) {
-                            MetricTile(icon: "person.badge.key", label: L("User LaunchAgents"), value: "\(model.manageable.count)", caption: L("Manageable"), tint: Palette.accent)
-                            MetricTile(icon: "gearshape.2", label: L("Background items"), value: "\(model.background.count)", caption: L("Managed by macOS"), tint: Palette.violet)
-                            MetricTile(icon: "power", label: L("Loaded"), value: "\(model.records.filter { $0.status == L("Loaded") }.count)", caption: L("Startup status is read from launchd."), tint: Palette.green)
-                            MetricTile(icon: "eye", label: L("Read-only"), value: L("System"), caption: L("System daemons are never touched."), tint: Palette.blue)
-                        }
+                        SummaryCard(
+                            label: L("User LaunchAgents"),
+                            value: model.isScanning && model.records.isEmpty ? "—" : "\(model.manageable.count)",
+                            caption: L("Manageable"),
+                            facts: [
+                                SummaryFact(icon: "gearshape.2", label: L("Background items"), value: model.isScanning && model.records.isEmpty ? "—" : "\(model.background.count)", tint: Palette.violet, help: L("Managed by macOS")),
+                                SummaryFact(icon: "power", label: L("Loaded"), value: model.isScanning && model.records.isEmpty ? "—" : "\(model.records.filter { $0.status == L("Loaded") }.count)", tint: Palette.green, help: L("Startup status is read from launchd."))
+                            ]
+                        )
                         if model.backgroundItemsTimedOut {
                             BannerView(
                                 icon: "clock",

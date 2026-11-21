@@ -151,12 +151,20 @@ struct PrivacyView: View {
     }
 
     private var stats: some View {
-        HStack(spacing: 10) {
-            MetricTile(icon: "globe", label: L("Profiles"), value: "\(model.profiles.count)", caption: model.profiles.first?.profileName ?? L("No supported browser profile was found."), tint: Palette.accent)
-            MetricTile(icon: "shippingbox", label: L("Cache"), value: Fmt.bytes(bytes(for: .browserCache)), caption: L("Clearing cache does not sign you out."), tint: Palette.blue)
-            MetricTile(icon: "circle.grid.cross", label: L("Cookies & site data"), value: Fmt.bytes(bytes(for: .cookies) + bytes(for: .websiteData)), caption: L("Cookies will sign you out"), tint: Palette.amber)
-            MetricTile(icon: "clock.arrow.circlepath", label: L("Browsing history"), value: Fmt.bytes(bytes(for: .browsingHistory)), caption: L("Local history only"), tint: Palette.violet)
-        }
+        let cache = bytes(for: .browserCache)
+        let cookies = bytes(for: .cookies) + bytes(for: .websiteData)
+        let history = bytes(for: .browsingHistory)
+        return SummaryCard(
+            label: L("Browser data"),
+            value: Fmt.bytes(cache + cookies + history),
+            caption: model.profiles.first?.profileName ?? L("No supported browser profile was found."),
+            facts: [
+                SummaryFact(icon: "shippingbox", label: L("Cache"), value: Fmt.bytes(cache), tint: Palette.blue, help: L("Clearing cache does not sign you out.")),
+                SummaryFact(icon: "circle.grid.cross", label: L("Cookies & site data"), value: Fmt.bytes(cookies), tint: Palette.amber, help: L("Cookies will sign you out")),
+                SummaryFact(icon: "clock.arrow.circlepath", label: L("Browsing history"), value: Fmt.bytes(history), tint: Palette.violet, help: L("Local history only")),
+                SummaryFact(icon: "globe", label: L("Profiles"), value: "\(model.profiles.count)", tint: Palette.accent)
+            ]
+        )
     }
 
     private func bytes(for category: ItemCategory) -> Int64 {

@@ -191,87 +191,24 @@ struct DiskCleanupView: View {
 
     private func stats(_ report: ScanReport) -> some View {
         let found = visibleItems.filter { $0.category != .trash && !$0.isInformational }.count
-        let selectedBytes = model.selectedItems().reduce(0) { $0 + $1.size }
-        return HStack(alignment: .center, spacing: 22) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L("Estimated removable"))
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                    .tracking(0.4)
-                Text(Fmt.bytes(model.estimatedBytes))
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .tracking(-0.8)
-                    .monospacedDigit()
-                Text("\(found) " + L("items found"))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
-            Divider().frame(height: 64).opacity(0.5)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L("Selected"))
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                    .tracking(0.4)
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(model.selectedIDs.count)")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                    Text(Fmt.bytes(selectedBytes))
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+        return SummaryCard(
+            label: L("Estimated removable"),
+            value: Fmt.bytes(model.estimatedBytes),
+            caption: "\(found) " + L("items found"),
+            facts: [
+                SummaryFact(icon: "trash.circle", label: L("Trash"), value: Fmt.bytes(model.trashBytes), tint: Palette.amber),
+                SummaryFact(icon: "minus.circle", label: L("Skipped"), value: "\(model.skipped.count)", tint: Palette.amber, help: L("Skipped with a reason"), action: { showSkipped = true })
+            ]
+        ) {
+            SelectionSummary(count: model.selectedIDs.count, bytes: model.selectedItems().reduce(0) { $0 + $1.size }) {
+                let selectableCount = visibleItems.filter { model.isSelectable($0) }.count
+                if model.selectedIDs.count == selectableCount {
+                    model.deselectAll()
+                } else {
+                    model.selectAll(query: app.searchText)
                 }
-                Button {
-                    let selectableCount = visibleItems.filter { model.isSelectable($0) }.count
-                    if model.selectedIDs.count == selectableCount {
-                        model.deselectAll()
-                    } else {
-                        model.selectAll(query: app.searchText)
-                    }
-                } label: {
-                    Label(L("Select All"), systemImage: "checkmark.circle")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-            Spacer(minLength: 12)
-            VStack(alignment: .leading, spacing: 0) {
-                summaryFact(icon: "trash.circle", label: L("Trash"), value: Fmt.bytes(model.trashBytes), tint: Palette.amber)
-                Divider().opacity(0.4)
-                Button {
-                    showSkipped = true
-                } label: {
-                    summaryFact(icon: "minus.circle", label: L("Skipped"), value: "\(model.skipped.count)", tint: Palette.amber, chevron: true)
-                }
-                .buttonStyle(.plain)
-                .help(L("Skipped with a reason"))
-            }
-            .frame(width: 230)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card(padding: 16, radius: 16)
-    }
-
-    private func summaryFact(icon: String, label: String, value: String, tint: Color, chevron: Bool = false) -> some View {
-        HStack(spacing: 10) {
-            IconTile(symbol: icon, tint: tint, size: 26)
-            Text(label)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            Spacer(minLength: 6)
-            Text(value)
-                .font(.system(size: 13, weight: .semibold, design: .rounded).monospacedDigit())
-                .lineLimit(1)
-            if chevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.tertiary)
             }
         }
-        .padding(.vertical, 7)
-        .contentShape(Rectangle())
     }
 
     private var resultsList: some View {

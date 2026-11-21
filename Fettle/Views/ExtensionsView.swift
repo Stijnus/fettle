@@ -63,12 +63,17 @@ struct ExtensionsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        HStack(spacing: 10) {
-                            MetricTile(icon: "puzzlepiece", label: L("System extensions"), value: "\(model.records.filter { $0.kind == .system }.count)", caption: L("System-managed"), tint: Palette.violet)
-                            MetricTile(icon: "safari", label: L("Safari extensions"), value: "\(model.records.filter { $0.kind == .safari }.count)", caption: L("Managed in Safari"), tint: Palette.blue)
-                            MetricTile(icon: "globe", label: L("Browser add-ons"), value: "\(model.records.filter { $0.kind == .chromium || $0.kind == .firefox }.count)", caption: L("Chrome, Edge, Opera and Firefox"), tint: Palette.accent)
-                            MetricTile(icon: "person.crop.rectangle.stack", label: L("Profiles"), value: "\(model.profiles.count)", caption: model.profiles.first ?? L("No supported browser profile was found."), tint: Palette.amber)
-                        }
+                        SummaryCard(
+                            label: L("Extensions"),
+                            value: "\(model.records.count)",
+                            caption: model.profiles.first ?? L("No supported browser profile was found."),
+                            facts: [
+                                SummaryFact(icon: "puzzlepiece", label: L("System extensions"), value: "\(model.records.filter { $0.kind == .system }.count)", tint: Palette.violet, help: L("System-managed")),
+                                SummaryFact(icon: "safari", label: L("Safari extensions"), value: "\(model.records.filter { $0.kind == .safari }.count)", tint: Palette.blue, help: L("Managed in Safari")),
+                                SummaryFact(icon: "globe", label: L("Browser add-ons"), value: "\(model.records.filter { $0.kind == .chromium || $0.kind == .firefox }.count)", tint: Palette.accent, help: L("Chrome, Edge, Opera and Firefox")),
+                                SummaryFact(icon: "person.crop.rectangle.stack", label: L("Profiles"), value: "\(model.profiles.count)", tint: Palette.amber)
+                            ]
+                        )
                         ForEach(grouped, id: \.kind) { group in
                             VStack(alignment: .leading, spacing: 8) {
                                 SectionTitle(title: sectionTitle(group.kind), subtitle: sectionSubtitle(group.kind))

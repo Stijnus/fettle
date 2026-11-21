@@ -105,11 +105,10 @@ struct UpdaterView: View {
                     .padding(.bottom, 10)
 
                 if let note = model.notes.first {
-                    BannerView(
+                    InfoNote(
                         icon: "lock.shield.fill",
                         title: L("Read-only update check"),
-                        message: note,
-                        tint: Palette.blue
+                        message: note
                     )
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
@@ -167,36 +166,16 @@ struct UpdaterView: View {
     }
 
     private var stats: some View {
-        HStack(spacing: 10) {
-            MetricTile(
-                icon: "arrow.down.circle.fill",
-                label: L("Available updates"),
-                value: "\(model.availableRecords.count)",
-                caption: model.availableRecords.isEmpty ? L("Nothing waiting") : L("Ready to review"),
-                tint: Palette.accent
-            )
-            MetricTile(
-                icon: "app.fill",
-                label: L("Apps checked"),
-                value: "\(model.records.count)",
-                caption: "\(model.skipped.count) " + L("skipped"),
-                tint: Palette.blue
-            )
-            MetricTile(
-                icon: "checkmark.seal.fill",
-                label: L("Up to date"),
-                value: "\(model.upToDateRecords.count)",
-                caption: L("From the app's own feed"),
-                tint: Palette.green
-            )
-            MetricTile(
-                icon: "clock",
-                label: L("Last check"),
-                value: model.lastScan.map { Fmt.relativeDate($0) } ?? L("Not checked yet"),
-                caption: model.lastScan.map { Fmt.dateTime($0) },
-                tint: Palette.violet
-            )
-        }
+        SummaryCard(
+            label: L("Available updates"),
+            value: "\(model.availableRecords.count)",
+            caption: model.availableRecords.isEmpty ? L("Nothing waiting") : L("Ready to review"),
+            facts: [
+                SummaryFact(icon: "app.fill", label: L("Apps checked"), value: "\(model.records.count)", tint: Palette.blue, help: "\(model.skipped.count) " + L("skipped")),
+                SummaryFact(icon: "checkmark.seal.fill", label: L("Up to date"), value: "\(model.upToDateRecords.count)", tint: Palette.green, help: L("From the app's own feed")),
+                SummaryFact(icon: "clock", label: L("Last check"), value: model.lastScan.map { Fmt.relativeDate($0) } ?? L("Not checked yet"), tint: Palette.violet, help: model.lastScan.map { Fmt.dateTime($0) })
+            ]
+        )
     }
 
     private var content: some View {

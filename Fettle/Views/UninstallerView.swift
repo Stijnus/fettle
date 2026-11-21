@@ -92,14 +92,6 @@ struct UninstallerView: View {
                         .padding(.horizontal, 24)
                         .padding(.bottom, 6)
                 }
-                HStack(spacing: 8) {
-                    Text(L("Apps")).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-                    Spacer()
-                    Button { model.selectAllApps(visibleApps) } label: { Label(L("Select All"), systemImage: "checkmark.circle") }
-                        .buttonStyle(.bordered).controlSize(.small)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 6)
                 if model.isScanning && model.apps.isEmpty {
                     VStack(spacing: 10) {
                         ProgressView().controlSize(.large)
@@ -161,20 +153,31 @@ struct UninstallerView: View {
     }
 
     private var stats: some View {
-        HStack(spacing: 10) {
-            MetricTile(icon: "app.fill", label: L("Apps"), value: "\(model.apps.count)", caption: "\(model.availableApps.count) " + L("can be removed"), tint: Palette.accent)
-            MetricTile(icon: "externaldrive", label: L("Selected"), value: "\(model.selectedApps.count)", caption: Fmt.bytes(model.selectedBytes), tint: Palette.blue)
-            MetricTile(icon: "person.crop.circle.badge.exclamationmark", label: L("Running apps"), value: "\(model.runningApps.count)", caption: L("Quit before removing"), tint: Palette.amber)
-            MetricTile(icon: "folder", label: L("Scanned folders"), value: "\(2 + model.appFolders.count)", caption: "/Applications, ~/Applications", tint: Palette.violet)
+        SummaryCard(
+            label: L("Apps"),
+            value: "\(model.apps.count)",
+            caption: "\(model.availableApps.count) " + L("can be removed"),
+            facts: [
+                SummaryFact(icon: "person.crop.circle.badge.exclamationmark", label: L("Running apps"), value: "\(model.runningApps.count)", tint: Palette.amber, help: L("Quit before removing")),
+                SummaryFact(icon: "folder", label: L("Scanned folders"), value: "\(2 + model.appFolders.count)", tint: Palette.violet, help: (["/Applications", "~/Applications"] + model.appFolders).joined(separator: ", "))
+            ]
+        ) {
+            SelectionSummary(count: model.selectedApps.count, bytes: model.selectedBytes) {
+                let selectable = visibleApps.filter { model.isSelectable($0) }
+                if !selectable.isEmpty && model.selectedAppIDs.count == selectable.count {
+                    model.selectedAppIDs.removeAll()
+                } else {
+                    model.selectAllApps(visibleApps)
+                }
+            }
         }
     }
 
     private var bannerForNotes: some View {
-        BannerView(
+        InfoNote(
             icon: "shield.lefthalf.filled",
             title: L("Exact identifier match"),
-            message: L("Shared containers may contain data from several apps, so Fettle leaves them alone."),
-            tint: Palette.blue
+            message: L("Shared containers may contain data from several apps, so Fettle leaves them alone.")
         )
     }
 
