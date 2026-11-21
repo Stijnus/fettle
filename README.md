@@ -50,7 +50,9 @@ signed ad hoc for local use and is not notarised for distribution.
 - **Overview** – disk usage, live Mac Health strip, last scan, results by
   module, local cleanup and activity history, one read-only Scan action, and
   clear separation between estimated removable bytes, bytes moved to the
-  Trash, and macOS's reported free space.
+  Trash, and macOS's reported free space. When a scan could not read
+  something, Overview says the result is incomplete and the module shows the
+  skipped path and reason.
 - **Disk Cleanup** – user caches, old logs, crash reports, temporary files and
   the current user's Trash, grouped by category and location. A separate large
   file view scans folders you choose. Trash is emptied only through its own
@@ -72,7 +74,9 @@ signed ad hoc for local use and is not notarised for distribution.
   sheet lets you choose which updates to open. Fettle never downloads or runs
   an installer: it opens the vendor's page, the App Store or Software Update.
   The check is manual unless automatic checks or inclusion in Scan are enabled
-  in Settings, and every scanned app can be ignored.
+  in Settings, and every scanned app can be ignored. After a vendor update,
+  Fettle rereads the installed version. Apps without a readable feed get an
+  **Open App** action so their own updater can run.
 - **Mac Health** – live CPU, memory, disk, battery and network pages, plus a
   persisted Activity page. CPU and memory have trend lines, per-core load, top
   process lists and quit/force-quit with confirmation. Memory shows pressure,
@@ -81,7 +85,9 @@ signed ad hoc for local use and is not notarised for distribution.
   Battery shows charge, health, cycles, condition, temperature and adapter.
   Network shows counters, addresses and current rates. Six alert kinds cover
   memory pressure, high CPU, low disk, a large Trash, external drives and drive
-  health. An opt-in Accessibility check reports apps that do not respond.
+  health. An opt-in Accessibility check reports apps that do not respond and
+  tells a slow launch apart from a confirmed timeout. Activity history shows
+  gaps where Fettle was not running instead of joining the line across them.
 - **Menu bar** – a popover with live readings, Scan, Quit Selected Apps, Eject All,
   settings and an at-a-glance battery/drive/busiest-process summary. Background
   mode keeps Fettle available after the window closes, and Open at Login uses
@@ -93,8 +99,10 @@ signed ad hoc for local use and is not notarised for distribution.
   extensions where discoverable, and Chrome, Edge, Opera and Firefox add-ons
   read from their profiles. Management opens the supported settings surface.
 - **Login Items** – user LaunchAgents with reversible enable/disable through
-  `launchctl`, plus the macOS background items `sfltool` can report. System
-  daemons are never modified.
+  `launchctl`, plus the macOS background items `sfltool` can report. User
+  LaunchAgents appear while macOS is still collecting background items, and
+  Retry stays available even when the list comes back empty. System daemons
+  are never modified.
 - **Privacy** – browser cache, cookies/site data, browsing history and download
   history by browser and profile, with sign-out explanations, download files
   preserved, and passwords never read. Recent items route to Finder and
@@ -190,18 +198,37 @@ each macOS interface. The main ones:
 - SMART depends on the drive and enclosure. “Health unavailable” is not a health
   verdict; some external drives need a direct connection.
 - Network counters are reported since boot and may wrap after very long uptime.
+  Rates restart from a fresh baseline after a counter reset or a long pause.
 - Open at Login uses the macOS login-item API. Registration and unregistration
   were exercised on this Mac and left no login item behind. A rebuilt or moved
   app may need to be registered again; the exact status is always shown.
 - Activity history exists only while Fettle is running; it keeps one numeric
   reading per minute for seven days and never stores process names.
-- Notifications require the user's permission. Official releases can include a signed update feed.
-  Local builds without a bundled feed need the URL and public key in Settings.
+- Notifications require the user's permission. Official releases can include
+  a signed update feed; local builds without a bundled feed need the URL and
+  public key in Settings.
 
 ## Optional signed update feed
 
-Release builds can ship with a pinned public key and feed URL. On the release machine, create a persistent signing key once in a secure directory outside the checkout (`umask 077`, then `openssl rand -out fettle-feed.key 32` in a new directory). Back up this key securely. Set `FETTLE_FEED_KEY_FILE` to its absolute path for every official `make release`. The release script embeds the matching public key before code signing and emits `dist/feed.json` for the finished ZIP. Upload the feed alongside the ZIP on the matching stable GitHub release. Previously distributed builds without a pinned key still need manual configuration in Settings. The feed is a
-JSON object like:
+Release builds can ship with a pinned public key and feed URL.
+
+1. On the release machine, create a signing key once, in a new directory
+   outside the checkout:
+
+   ```sh
+   umask 077
+   openssl rand -out fettle-feed.key 32
+   ```
+
+   Back up this key securely. Anyone with it can sign updates.
+2. Set `FETTLE_FEED_KEY_FILE` to the key's absolute path for every official
+   `make release`. The release script embeds the matching public key before
+   code signing and writes `dist/feed.json` for the finished ZIP.
+3. Upload `dist/feed.json` alongside the ZIP on the matching stable GitHub
+   release.
+
+Builds that were distributed before the key was pinned need the feed URL and
+public key entered in Settings once. The feed is a JSON object like:
 
 ```json
 {
