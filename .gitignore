@@ -1,0 +1,52 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# Build output (make writes these)
+build/
+dist/
+*.dmg
+.build/
+.build-release/
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.app
+*.zip
+CHECKSUMS.txt
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Test and preview output
+*.log
+fettle-*.json
+fettle-preview.png
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Secrets and signing
+*.p12
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
