@@ -202,6 +202,10 @@ final class UpdaterModel: ObservableObject {
     }
 
     func openSingle(_ record: AppUpdateRecord) {
+        if record.status == .noChannel {
+            openApp(record)
+            return
+        }
         open([record], title: L("Update page opened"))
     }
 

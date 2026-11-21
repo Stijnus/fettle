@@ -97,21 +97,23 @@ enum UpdaterScanner {
     }
 
     private static func inspect(appAt url: URL) async -> AppUpdateRecord? {
-        guard let info = FileSafety.appBundleInfo(at: url) else { return nil }
-        let bundle = Bundle(url: url)
-        let build = (bundle?.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? ""
-        let isSystem = info.id.hasPrefix("com.apple.") || url.path.hasPrefix("/System/")
+        guard let metadata = CFBundleCopyInfoDictionaryForURL(url as CFURL) as? [String: Any],
+              let bundleID = metadata["CFBundleIdentifier"] as? String, !bundleID.isEmpty else { return nil }
+        let build = metadata["CFBundleVersion"] as? String ?? ""
+        let version = metadata["CFBundleShortVersionString"] as? String ?? build
+        let name = metadata["CFBundleDisplayName"] as? String ?? metadata["CFBundleName"] as? String ?? url.deletingPathExtension().lastPathComponent
+        let isSystem = bundleID.hasPrefix("com.apple.") || url.path.hasPrefix("/System/")
         let running = SystemActions.isRunning(appAt: url)
         let receipt = url.appendingPathComponent("Contents/_MASReceipt/receipt")
         let isMAS = FileManager.default.fileExists(atPath: receipt.path)
-        let feedString = (bundle?.object(forInfoDictionaryKey: "SUFeedURL") as? String)?
+        let feedString = (metadata["SUFeedURL"] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         var record = AppUpdateRecord(
             bundleURL: url,
-            appName: info.name,
-            bundleID: info.id,
-            currentVersion: info.version,
+            appName: name,
+            bundleID: bundleID,
+            currentVersion: version,
             currentBuild: build,
             latestVersion: nil,
             latestBuild: nil,
@@ -191,10 +193,10 @@ enum UpdaterScanner {
             record.minimumSystemVersion = latest.minimumSystemVersion
             record.source = .sparkle
 
-            if latestVersion.isEmpty {
+            if latestVersion.isEmpty || version.isEmpty {
                 record.status = .noChannel
                 record.errorMessage = L("The update feed did not contain a usable version.")
-            } else if VersionOrder.isNewer(latestVersion, than: info.version) {
+            } else if VersionOrder.isNewer(latestVersion, than: version) {
                 record.status = .available
                 record.errorMessage = nil
             } else {

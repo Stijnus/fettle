@@ -404,7 +404,7 @@ enum FileSafety {
         let after = freeSpace(at: spaceURL)
         return OperationOutcome(
             title: L("Deleted permanently"),
-            message: L("%d items were permanently deleted.", results.filter { $0.success }.count),
+            message: L("%d items were removed from this Mac.", results.filter { $0.success }.count),
             results: results,
             bytes: results.filter { $0.success }.reduce(0) { $0 + $1.bytes },
             freeSpaceBefore: before,

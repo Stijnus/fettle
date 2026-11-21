@@ -318,14 +318,14 @@ final class AppModel: ObservableObject {
 
     var summaries: [ModuleSummary] {
         [
-            ModuleSummary(id: .disk, bytes: disk.estimatedBytes, itemCount: disk.items.filter { $0.category != .trash && !$0.isInformational && !$0.isProtected }.count, lastScan: disk.lastScan, note: disk.report == nil ? L("No scan results yet.") : nil),
-            ModuleSummary(id: .maintenance, bytes: maintenance.estimatedBytes, itemCount: maintenance.items.filter { !$0.isInformational }.count, lastScan: maintenance.lastScan, note: maintenance.report == nil ? L("No scan results yet.") : nil),
+            ModuleSummary(id: .disk, bytes: disk.estimatedBytes, itemCount: disk.items.filter { $0.category != .trash && !$0.isInformational && !$0.isProtected }.count, lastScan: disk.lastScan, note: disk.report == nil ? L("No scan results yet.") : disk.report?.coverageNote),
+            ModuleSummary(id: .maintenance, bytes: maintenance.estimatedBytes, itemCount: maintenance.items.filter { !$0.isInformational }.count, lastScan: maintenance.lastScan, note: maintenance.report == nil ? L("No scan results yet.") : maintenance.report?.coverageNote),
             ModuleSummary(id: .uninstaller, bytes: uninstaller.apps.reduce(0) { $0 + $1.size }, itemCount: uninstaller.apps.count, lastScan: uninstaller.lastScan, note: uninstaller.apps.isEmpty ? L("No scan results yet.") : nil),
-            ModuleSummary(id: .updater, bytes: 0, itemCount: updater.availableRecords.count, lastScan: updater.lastScan, note: updater.lastScan == nil ? L("No scan results yet.") : (updater.availableRecords.isEmpty ? L("Up to date") : L("%d updates available", updater.availableRecords.count))),
-            ModuleSummary(id: .privacy, bytes: privacy.items.filter { !$0.isInformational && !$0.isProtected }.reduce(0) { $0 + $1.size }, itemCount: privacy.items.filter { $0.category != .recentItems && !$0.isInformational }.count, lastScan: privacy.lastScan, note: privacy.report == nil ? L("No scan results yet.") : nil),
+            ModuleSummary(id: .updater, bytes: 0, itemCount: updater.availableRecords.count, lastScan: updater.lastScan, note: updater.lastScan == nil ? L("No scan results yet.") : L("%d updates available", updater.availableRecords.count)),
+            ModuleSummary(id: .privacy, bytes: privacy.items.filter { !$0.isInformational && !$0.isProtected }.reduce(0) { $0 + $1.size }, itemCount: privacy.items.filter { $0.category != .recentItems && !$0.isInformational }.count, lastScan: privacy.lastScan, note: privacy.report == nil ? L("No scan results yet.") : privacy.report?.coverageNote),
             ModuleSummary(id: .health, bytes: 0, itemCount: health.activeAlerts.count, lastScan: health.snapshot?.readAt, note: health.snapshot == nil ? L("Reading this Mac…") : (health.activeAlerts.isEmpty ? L("All clear") : health.statusHeadline)),
             ModuleSummary(id: .extensions, bytes: 0, itemCount: extensions.records.count, lastScan: extensions.lastScan, note: extensions.lastScan == nil ? L("No scan results yet.") : nil),
-            ModuleSummary(id: .loginItems, bytes: 0, itemCount: loginItems.records.count, lastScan: loginItems.lastScan, note: loginItems.lastScan == nil ? L("No scan results yet.") : nil),
+            ModuleSummary(id: .loginItems, bytes: 0, itemCount: loginItems.records.count, lastScan: loginItems.lastScan, note: loginItems.lastScan == nil ? L("No scan results yet.") : (loginItems.readableBackgroundItems ? nil : L("Partial scan"))),
             ModuleSummary(id: .power, bytes: 0, itemCount: power.snapshot?.settings.count ?? 0, lastScan: power.snapshot?.readAt, note: power.snapshot == nil ? L("Read-only") : nil),
         ]
     }

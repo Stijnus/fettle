@@ -12,6 +12,7 @@ enum LoginItemsScanner {
     }
 
     static func scan(
+        launchAgentsReady: @escaping @Sendable ([LoginRecord]) -> Void,
         progress: @escaping @Sendable (ScanProgress) -> Void,
         cancelled: @escaping @Sendable () -> Bool
     ) -> Result {
@@ -23,6 +24,7 @@ enum LoginItemsScanner {
         progress(ScanProgress(fraction: 0.2, message: L("Scanning %@…", L("User LaunchAgents"))))
         records += scanLaunchAgents(notes: &notes, skipped: &skipped, cancelled: cancelled)
 
+        launchAgentsReady(records)
         progress(ScanProgress(fraction: 0.65, message: L("Scanning %@…", L("Background items"))))
         let background = scanBackgroundItems(notes: &notes)
         records += background.records

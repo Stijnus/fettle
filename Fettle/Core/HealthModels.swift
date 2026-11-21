@@ -102,7 +102,7 @@ struct ProcessReading: Identifiable, Hashable, Sendable {
     var startedAt: Date?
     var canManage: Bool = false
     var isOwnProcess: Bool = false
-    var responding: Bool?
+    var stillLaunching = false
     var parentPID: pid_t = 0
 
     var displayName: String {
@@ -165,9 +165,9 @@ struct DriveHealth: Identifiable, Hashable, Sendable {
     }
 
     var smartLabel: String {
-        if smartStatus.isEmpty { return L("Not reported") }
+        if smartStatus.isEmpty { return L("Health unavailable") }
         if smartStatus.lowercased() == "verified" { return L("Verified") }
-        if smartStatus.lowercased() == "not supported" { return L("Not supported") }
+        if smartStatus.lowercased() == "not supported" { return L("Health unavailable") }
         return smartStatus
     }
 }
@@ -321,6 +321,7 @@ struct TrendPoint: Identifiable, Hashable, Sendable {
     var id = UUID()
     var date: Date
     var value: Double
+    var segment = 0
 }
 
 struct HealthHistorySample: Identifiable, Codable, Hashable, Sendable {

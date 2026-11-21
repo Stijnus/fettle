@@ -281,6 +281,7 @@ struct SkippedItem: Identifiable, Hashable, Codable, Sendable {
     var path: String
     var reason: String
     var category: ItemCategory?
+    var unreadable: Bool? = nil
 }
 
 struct ScanReport: Codable, Sendable {
@@ -290,6 +291,8 @@ struct ScanReport: Codable, Sendable {
     var notes: [String] = []
     var duration: TimeInterval = 0
 
+    var firstUnreadable: SkippedItem? { skipped.first { $0.unreadable == true } }
+    var coverageNote: String? { firstUnreadable == nil ? nil : L("Partial scan") }
     var estimatedBytes: Int64 { items.filter { !$0.isInformational && !$0.isProtected }.reduce(0) { $0 + $1.size } }
     var totalBytes: Int64 { items.reduce(0) { $0 + $1.size } }
 

@@ -277,7 +277,6 @@ actor HealthSampler {
                 startedAt: start,
                 canManage: Self.canManageProcess(name: name, path: path, pid: pid, uid: bsd.pbi_uid),
                 isOwnProcess: false,
-                responding: nil,
                 parentPID: pid_t(bsd.pbi_ppid)
             ))
         }
@@ -523,18 +522,13 @@ actor HealthSampler {
         }
         reading.primaryInterface = primaryInterface
 
-        let elapsed = previousNetworkTime.map { max(0.2, now.timeIntervalSince($0)) } ?? 0
+        let elapsed = previousNetworkTime.map { now.timeIntervalSince($0) } ?? 0
         var next: [String: (received: UInt64, sent: UInt64)] = [:]
         var interfaces: [NetworkInterfaceReading] = []
         for (name, bytes) in counters {
             if name == "lo0" { continue }
             if bytes.received == 0 && bytes.sent == 0 && name != primaryInterface { continue }
-            var receiveRate: Double = 0
-            var sendRate: Double = 0
-            if let previous = previousNetwork[name], elapsed > 0 {
-                if bytes.received >= previous.received { receiveRate = Double(bytes.received - previous.received) / elapsed }
-                if bytes.sent >= previous.sent { sendRate = Double(bytes.sent - previous.sent) / elapsed }
-            }
+            let (receiveRate, sendRate) = Self.networkRates(current: bytes, previous: previousNetwork[name], elapsed: elapsed)
             next[name] = bytes
             reading.totalReceived &+= bytes.received
             reading.totalSent &+= bytes.sent
@@ -575,6 +569,15 @@ actor HealthSampler {
         if name == "en0" { return "Wi-Fi" }
         if name.hasPrefix("en") { return L("Ethernet") }
         return name
+    }
+
+    nonisolated static func networkRates(current: (received: UInt64, sent: UInt64),
+                                         previous: (received: UInt64, sent: UInt64)?,
+                                         elapsed: TimeInterval) -> (Double, Double) {
+        // A missed minute, a new interface or a reset starts a new baseline.
+        guard let previous, elapsed > 0, elapsed < 60,
+              current.received >= previous.received, current.sent >= previous.sent else { return (0, 0) }
+        return (Double(current.received - previous.received) / elapsed, Double(current.sent - previous.sent) / elapsed)
     }
 
     private nonisolated static func networkCounters() -> [String: (received: UInt64, sent: UInt64)] {

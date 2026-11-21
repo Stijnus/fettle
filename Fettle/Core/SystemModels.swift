@@ -148,7 +148,7 @@ final class LoginItemsModel: ObservableObject {
     @Published var lastScan: Date?
 
     private var scanTask: Task<Void, Never>?
-    private let cancelFlag = CancelFlag()
+    private var cancelFlag = CancelFlag()
     private var toastTask: Task<Void, Never>?
 
     init(settings: AppSettings, history: HistoryStore) {
@@ -162,20 +162,28 @@ final class LoginItemsModel: ObservableObject {
     func startScan() { scanTask = Task { await runScan() } }
 
     func runScan() async {
-        cancelFlag.reset()
+        guard !isScanning else { return }
+        cancelFlag = CancelFlag()
         isScanning = true
         progress = 0
         phase = L("Preparing…")
         let flag = cancelFlag
         let relay = ScanProgressRelay { update in
             Task { @MainActor in
+                guard self.cancelFlag === flag, !flag.isCancelled, self.isScanning else { return }
                 self.progress = update.fraction
                 self.phase = update.message
             }
         }
         let result = await Task.detached(priority: .userInitiated) {
-            LoginItemsScanner.scan(progress: { relay.send($0) }, cancelled: { flag.isCancelled })
+            LoginItemsScanner.scan(launchAgentsReady: { agents in
+                Task { @MainActor in
+                    guard self.cancelFlag === flag, !flag.isCancelled, self.isScanning else { return }
+                    self.records = agents
+                }
+            }, progress: { relay.send($0) }, cancelled: { flag.isCancelled })
         }.value
+        guard cancelFlag === flag else { return }
         guard !flag.isCancelled else {
             isScanning = false
             phase = L("Scan cancelled")
