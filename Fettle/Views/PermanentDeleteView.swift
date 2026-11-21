@@ -79,9 +79,11 @@ struct PermanentDeleteView: View {
                         Text(L("Calculating…")).font(.system(size: 10.5)).foregroundStyle(.secondary)
                     }
                 }
-                Button(L("Clear")) { model.clear() }
-                    .buttonStyle(.borderless)
-                    .disabled(model.items.isEmpty)
+                if !model.items.isEmpty {
+                    Button(L("Clear List")) { model.clear() }
+                        .buttonStyle(.borderless)
+                        .padding(.trailing, 8)
+                }
                 Button {
                     model.requestDelete()
                 } label: {
@@ -119,9 +121,6 @@ struct PermanentDeleteView: View {
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .multilineTextAlignment(.center)
             Text(L("A separate, deliberate erase.")).font(.system(size: 11)).foregroundStyle(.secondary)
-            Button(L("Choose Files…")) { chooseFiles() }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 38)

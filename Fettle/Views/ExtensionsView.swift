@@ -76,10 +76,18 @@ struct ExtensionsView: View {
                         )
                         ForEach(grouped, id: \.kind) { group in
                             VStack(alignment: .leading, spacing: 8) {
-                                SectionTitle(title: sectionTitle(group.kind), subtitle: sectionSubtitle(group.kind))
+                                HStack(alignment: .bottom) {
+                                    SectionTitle(title: sectionTitle(group.kind), subtitle: sectionSubtitle(group.kind))
+                                    Spacer()
+                                    if group.kind == .system, let first = group.records.first {
+                                        Button(L("Open Login Items & Extensions")) { model.open(first) }
+                                            .buttonStyle(.bordered)
+                                            .controlSize(.small)
+                                    }
+                                }
                                 VStack(spacing: 8) {
                                     ForEach(group.records) { record in
-                                        ExtensionRow(record: record) { model.open(record) }
+                                        ExtensionRow(record: record, action: record.kind == .system ? nil : { model.open(record) })
                                     }
                                 }
                             }
@@ -133,7 +141,7 @@ struct ExtensionsView: View {
 
 struct ExtensionRow: View {
     var record: ExtensionRecord
-    var action: () -> Void
+    var action: (() -> Void)?
     @Environment(\.colorScheme) private var scheme
     @State private var hovering = false
 
@@ -142,24 +150,25 @@ struct ExtensionRow: View {
             IconTile(symbol: symbol, tint: tint, size: 34)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(record.name).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                    Text(displayName).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
                     if let enabled = record.enabled {
                         Pill(text: enabled ? L("Enabled") : L("Disabled"), tint: enabled ? Palette.green : .secondary)
                     } else {
                         Pill(text: L("Unknown"), tint: .secondary)
                     }
-                    if record.kind == .system { Pill(text: L("System-managed"), tint: Palette.violet) }
                 }
-                Text("\(record.host) · \(record.provider) · \(record.version.isEmpty ? "—" : record.version)")
+                Text(detailLine)
                     .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
                 if let note = record.note, !note.isEmpty {
                     Text(note).font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1)
                 }
             }
             Spacer()
-            Button(record.kind == .system ? L("Open Login Items & Extensions") : (record.kind == .safari ? L("Open Safari") : L("Review in Browser")), action: action)
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+            if let action {
+                Button(record.kind == .safari ? L("Open Safari") : L("Review in Browser"), action: action)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
         }
         .padding(11)
         .background(
@@ -168,6 +177,40 @@ struct ExtensionRow: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(hovering ? Palette.accent.opacity(0.25) : Palette.stroke(scheme), lineWidth: 1))
         )
         .onHover { hovering = $0 }
+    }
+
+    /// A readable name. System extensions often only report a bundle
+    /// identifier, so "com.vendor.DriverKit.SamsungACMControl" becomes
+    /// "Samsung ACM Control".
+    private var displayName: String {
+        guard isIdentifier else { return record.name }
+        return Self.splitWords(String(record.name.split(separator: ".").last ?? Substring(record.name)))
+    }
+
+    private var isIdentifier: Bool {
+        !record.name.contains(" ") && record.name.split(separator: ".").count >= 3
+    }
+
+    private var detailLine: String {
+        let version = record.version.isEmpty ? "—" : record.version
+        if isIdentifier { return "\(record.name) · \(record.provider) · \(version)" }
+        return "\(record.host) · \(record.provider) · \(version)"
+    }
+
+    static func splitWords(_ text: String) -> String {
+        let chars = Array(text)
+        var result = ""
+        for (index, char) in chars.enumerated() {
+            if index > 0, char.isUppercase {
+                let previous = chars[index - 1]
+                let next = index + 1 < chars.count ? chars[index + 1] : nil
+                if previous.isLowercase || previous.isNumber || (previous.isUppercase && (next?.isLowercase ?? false)) {
+                    result.append(" ")
+                }
+            }
+            result.append(char)
+        }
+        return result.replacingOccurrences(of: "_", with: " ").replacingOccurrences(of: "-", with: " ")
     }
 
     private var symbol: String {

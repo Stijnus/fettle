@@ -242,7 +242,7 @@ struct AppRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(record.name).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
-                    if record.isSystem { Pill(text: L("Protected"), tint: Palette.coral) }
+                    if record.isSystem { Pill(text: L("Protected"), icon: "lock.fill", tint: .secondary) }
                     if record.isRunning { Pill(text: L("Running"), tint: Palette.amber) }
                     if record.accessError != nil { Pill(text: L("Permission denied"), tint: Palette.coral) }
                     if record.vendorUninstaller != nil { Pill(text: L("Vendor uninstaller"), tint: Palette.violet) }
@@ -363,7 +363,7 @@ struct UninstallerReviewSheet: View {
                     HStack(spacing: 6) {
                         Text(appRecord.name).font(.system(size: 14, weight: .bold, design: .rounded))
                         if appRecord.isRunning { Pill(text: L("Running"), tint: Palette.amber) }
-                        if appRecord.isSystem { Pill(text: L("Protected"), tint: Palette.coral) }
+                        if appRecord.isSystem { Pill(text: L("Protected"), icon: "lock.fill", tint: .secondary) }
                     }
                     Text("\(appRecord.bundleID) · \(L("Version")) \(appRecord.version) · \(Fmt.bytes(appRecord.size))")
                         .font(.system(size: 10.5)).foregroundStyle(.secondary)

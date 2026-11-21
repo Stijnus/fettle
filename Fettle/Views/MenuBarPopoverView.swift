@@ -30,7 +30,7 @@ struct MenuBarPopoverView: View {
             Divider().opacity(0.5)
             footer
         }
-        .frame(width: 368, height: 540)
+        .frame(width: 368, height: 480)
         .background(Palette.background(scheme))
         .preferredColorScheme(app.settings.appearance.colorScheme)
     }
@@ -252,7 +252,7 @@ struct MenuBarPopoverView: View {
             Button {
                 actions.quit()
             } label: {
-                Text(L("Quit"))
+                Text(L("Quit Fettle"))
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.secondary)

@@ -152,7 +152,6 @@ struct MaintenanceView: View {
             item: item,
             selected: model.selectedIDs.contains(item.id),
             selectable: !item.isInformational,
-            showLocation: true,
             onToggle: { model.toggle(item) },
             onReveal: { FileSafety.revealInFinder(item.url) },
             onInfo: { detailItem = item },

@@ -145,7 +145,8 @@ struct SettingsView: View {
                             ForEach(AppearanceMode.allCases) { mode in Text(mode.title).tag(mode) }
                         }
                         .labelsHidden()
-                        .frame(width: 160)
+                        .fixedSize()
+                        .frame(width: 190, alignment: .trailing)
                     }
                     Divider()
                     HStack {
@@ -158,7 +159,8 @@ struct SettingsView: View {
                             ForEach(AppLanguage.allCases) { language in Text(language.title).tag(language) }
                         }
                         .labelsHidden()
-                        .frame(width: 190)
+                        .fixedSize()
+                        .frame(width: 190, alignment: .trailing)
                     }
                     Divider()
                     HStack {
@@ -171,7 +173,8 @@ struct SettingsView: View {
                             ForEach([10, 50, 100, 500, 1_000], id: \.self) { value in Text("\(value) MB").tag(value) }
                         }
                         .labelsHidden()
-                        .frame(width: 120)
+                        .fixedSize()
+                        .frame(width: 190, alignment: .trailing)
                     }
                 }
             }
@@ -193,7 +196,8 @@ struct SettingsView: View {
                             ForEach([2, 3, 5, 10], id: \.self) { value in Text(L("%d seconds", value)).tag(value) }
                         }
                         .labelsHidden()
-                        .frame(width: 120)
+                        .fixedSize()
+                        .frame(width: 190, alignment: .trailing)
                     }
                     Divider()
                     Toggle(isOn: $settings.activityHistoryEnabled) {
@@ -371,7 +375,8 @@ struct SettingsView: View {
                             }
                         }
                         .labelsHidden()
-                        .frame(width: 150)
+                        .fixedSize()
+                        .frame(width: 150, alignment: .trailing)
                         .onChange(of: settings.reminderIntervalDays) { _, _ in reschedule() }
                     }
                     Divider()
@@ -391,7 +396,8 @@ struct SettingsView: View {
                             }
                         }
                         .labelsHidden()
-                        .frame(width: 130)
+                        .fixedSize()
+                        .frame(width: 130, alignment: .trailing)
                     }
                     Divider()
                     Toggle(isOn: $settings.diskSpaceAlert) {
@@ -411,7 +417,8 @@ struct SettingsView: View {
                                 }
                             }
                             .labelsHidden()
-                            .frame(width: 190)
+                            .fixedSize()
+                            .frame(width: 190, alignment: .trailing)
                         }
                     }
                 }
@@ -439,7 +446,8 @@ struct SettingsView: View {
                             ForEach([70, 80, 85, 90, 95], id: \.self) { value in Text("\(value)%").tag(value) }
                         }
                         .labelsHidden()
-                        .frame(width: 82)
+                        .fixedSize()
+                        .frame(width: 82, alignment: .trailing)
                         .disabled(!settings.highCPUAlert)
                     }
                     Toggle(isOn: $settings.driveHealthAlert) {
@@ -483,7 +491,8 @@ struct SettingsView: View {
                             }
                         }
                         .labelsHidden()
-                        .frame(width: 140)
+                        .fixedSize()
+                        .frame(width: 140, alignment: .trailing)
                         Button {
                             SoundPlayer.playSuccess(enabled: true, name: settings.soundName)
                         } label: {
@@ -639,6 +648,7 @@ struct SettingsView: View {
 
     private func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 12).fill(Palette.card(scheme)))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.stroke(scheme), lineWidth: 1))

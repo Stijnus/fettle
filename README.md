@@ -259,9 +259,9 @@ Gatekeeper blocks it until the user right-clicks the app → **Open**, or runs
 **Publishing on GitHub.**
 
 ```sh
-git tag v1.2 && git push origin v1.2
-gh release create v1.2 dist/Fettle-1.2.dmg dist/Fettle-1.2.zip dist/SHA256SUMS.txt \
-  --title "Fettle 1.2" --generate-notes
+git tag v1.3 && git push origin v1.3
+gh release create v1.3 dist/Fettle-1.3.dmg dist/Fettle-1.3.zip dist/SHA256SUMS.txt \
+  --title "Fettle 1.3" --generate-notes
 ```
 
 ## Project layout

@@ -187,7 +187,7 @@ enum PrivacyScanner {
             root: root,
             isRunning: running
         )
-        let safariLocation = "Safari — Safari"
+        let safariLocation = "Safari"
         guard FileManager.default.fileExists(atPath: root.path) || FileManager.default.fileExists(atPath: container.path) else {
             return ([], nil)
         }

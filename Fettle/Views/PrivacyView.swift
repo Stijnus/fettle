@@ -47,25 +47,24 @@ struct PrivacyView: View {
                 .controlSize(.large)
                 .disabled(model.isScanning)
                 Menu {
-                    ForEach(Array(Set(model.profiles.map { $0.browser }))) { browser in
-                        Button(browser.displayName + " — " + L("Passwords & credentials")) {
-                            model.openPasswordSettings(browser)
+                    Section(L("Passwords & credentials")) {
+                        ForEach(Array(Set(model.profiles.map { $0.browser }))) { browser in
+                            Button(browser.displayName) {
+                                model.openPasswordSettings(browser)
+                            }
                         }
                     }
+                    Divider()
+                    Button(L("Open Privacy Settings")) {
+                        SystemActions.openPrivacySettings()
+                    }
                 } label: {
-                    Image(systemName: "key")
+                    Image(systemName: "ellipsis.circle")
                 }
                 .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
                 .fixedSize()
-                .help(L("Passwords & credentials"))
-                Button {
-                    SystemActions.openPrivacySettings()
-                } label: {
-                    Image(systemName: "lock.shield")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .help(L("Open Privacy Settings"))
+                .help(L("More"))
             }
             .padding(.horizontal, 24)
             .padding(.top, 22)
@@ -101,10 +100,16 @@ struct PrivacyView: View {
                     Button { showSkipped = true } label: { Label(L("Skipped") + " \(model.skipped.count)", systemImage: "minus.circle") }
                         .buttonStyle(.borderless).controlSize(.small)
                     Spacer()
-                    Button { model.selectedIDs.removeAll() } label: { Label(L("Deselect All"), systemImage: "xmark.circle") }
-                        .buttonStyle(.borderless).controlSize(.small)
-                    Button { model.selectAll(query: app.searchText) } label: { Label(L("Select All"), systemImage: "checkmark.circle") }
-                        .buttonStyle(.bordered).controlSize(.small)
+                    Button {
+                        if !model.selectedIDs.isEmpty && model.selectedIDs.count >= visible.count {
+                            model.selectedIDs.removeAll()
+                        } else {
+                            model.selectAll(query: app.searchText)
+                        }
+                    } label: {
+                        Label(L("Select All"), systemImage: "checkmark.circle")
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 6)
@@ -180,7 +185,7 @@ struct PrivacyView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Palette.accent)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("\(profile.browser.displayName) — \(profile.profileName)")
+                            Text(profile.profileName == profile.browser.displayName ? profile.browser.displayName : "\(profile.browser.displayName) — \(profile.profileName)")
                                 .font(.system(size: 10.5, weight: .medium))
                             Text(profile.isRunning ? L("Running") : L("Available"))
                                 .font(.system(size: 9))
