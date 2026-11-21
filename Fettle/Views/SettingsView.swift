@@ -1,11 +1,13 @@
 import SwiftUI
 import AppKit
+import UserNotifications
 
 struct SettingsView: View {
     @ObservedObject var app: AppModel
     @ObservedObject var settings: AppSettings
     @Environment(\.colorScheme) private var scheme
     @State private var tab: SettingsTab = .general
+    @State private var notificationDenied = false
     @State private var showReset = false
     @State private var showHelpSheet = false
     @State private var showAboutSheet = false
@@ -40,6 +42,12 @@ struct SettingsView: View {
             case .about: return "info.circle"
             }
         }
+    }
+
+    private func refreshNotificationPermission() async {
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        notificationDenied = status == .denied
+        settings.notificationsEnabled = status == .authorized || status == .provisional
     }
 
     var body: some View {
@@ -102,6 +110,11 @@ struct SettingsView: View {
             }
         }
         .background(Palette.background(scheme))
+        .task(id: tab) { if tab == .notifications { await refreshNotificationPermission() } }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            app.refreshLoginItemStatus()
+            if tab == .notifications { Task { await refreshNotificationPermission() } }
+        }
         .sheet(isPresented: $showHelpSheet) {
             HelpView().environmentObject(app)
         }
@@ -241,7 +254,7 @@ struct SettingsView: View {
                     Toggle(isOn: $settings.menuBarEnabled) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L("Show Fettle in the menu bar")).font(.system(size: 12, weight: .semibold))
-                            Text(L("Click the icon for live readings, Scan, Free Up Memory and Eject All.")).font(.system(size: 10)).foregroundStyle(.secondary)
+                            Text(L("Click the icon for live readings, Scan, Quit Selected Apps and Eject All.")).font(.system(size: 10)).foregroundStyle(.secondary)
                         }
                     }
                     HStack {
@@ -473,8 +486,15 @@ struct SettingsView: View {
                                 .font(.system(size: 10)).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button(L("Allow Notifications…")) {
-                            Task { await app.updateNotificationSchedule(requestAuthorization: true) }
+                        Button(notificationDenied ? L("Open Notification Settings") : L("Allow Notifications…")) {
+                            if notificationDenied {
+                                SystemActions.openSettings(.notifications)
+                            } else {
+                                Task {
+                                    await app.updateNotificationSchedule(requestAuthorization: true)
+                                    await refreshNotificationPermission()
+                                }
+                            }
                         }
                         .buttonStyle(.bordered)
                     }
@@ -616,7 +636,7 @@ struct SettingsView: View {
             settingsCard {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L("How Fettle works")).font(.system(size: 12, weight: .semibold))
-                    Text(L("Fettle keeps scans on your Mac, starts with nothing selected, and asks before every change. Mac Health adds live readings and a menu bar popover; Free Up Memory only asks apps to quit."))
+                    Text(L("Fettle keeps scans on your Mac, starts with nothing selected, and asks before every change. Mac Health adds live readings and a menu bar popover; Quit Selected Apps only asks apps to quit."))
                         .font(.system(size: 10.5)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Text(L("Fettle is an original, independent utility for keeping your Mac in good shape."))
                         .font(.system(size: 9.5)).foregroundStyle(.tertiary).fixedSize(horizontal: false, vertical: true)

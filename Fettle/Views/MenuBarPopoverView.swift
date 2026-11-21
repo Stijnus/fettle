@@ -191,7 +191,7 @@ struct MenuBarPopoverView: View {
             Text(L("Quick actions")).font(.system(size: 9.5, weight: .semibold)).tracking(0.4).textCase(.uppercase).foregroundStyle(.secondary)
             HStack(spacing: 6) {
                 quickButton(icon: "sparkle.magnifyingglass", title: L("Scan")) { actions.scan() }
-                quickButton(icon: "wind", title: L("Free Up Memory")) { actions.freeMemory() }
+                quickButton(icon: "wind", title: L("Quit Selected Apps")) { actions.freeMemory() }
                 quickButton(icon: "eject.fill", title: L("Eject All")) { actions.eject() }
             }
         }

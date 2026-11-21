@@ -109,7 +109,7 @@ final class HealthModel: ObservableObject {
             snap.processes[index].isApplication = app.activationPolicy == .regular
             snap.processes[index].isFrontmost = app.isActive
             if !app.isFinishedLaunching, let started = snap.processes[index].startedAt, Date().timeIntervalSince(started) > 20 {
-                snap.processes[index].responding = false
+                snap.processes[index].stillLaunching = true
             }
             if app.bundleIdentifier == Bundle.main.bundleIdentifier {
                 snap.processes[index].isOwnProcess = true
@@ -324,7 +324,8 @@ final class HealthModel: ObservableObject {
 
     func performFreeMemory(pids: Set<pid_t>) {
         showFreeMemory = false
-        guard !pids.isEmpty, let before = snapshot?.memory.usedBytes else { return }
+        guard !pids.isEmpty, let initialMemory = snapshot?.memory else { return }
+        let before = initialMemory.usedBytes
         let targets = (snapshot?.processes ?? []).filter { pids.contains($0.pid) }
         var results: [ItemResult] = []
         for target in targets {
@@ -345,14 +346,14 @@ final class HealthModel: ObservableObject {
             let after = snapshot?.memory.usedBytes ?? before
             let freed = before > after ? before - after : 0
             let operation = OperationOutcome(
-                title: L("Free Up Memory"),
-                message: freed > 0
+                title: L("Quit Selected Apps"),
+                message: L("Memory pressure: %@ → %@. ", initialMemory.pressure.title, (snapshot?.memory.pressure ?? .unknown).title) + (freed > 0
                     ? L("Memory in use fell from %@ to %@. %@ was released.", Fmt.bytes(Int64(before)), Fmt.bytes(Int64(after)), Fmt.bytes(Int64(freed)))
-                    : L("Memory in use is %@. macOS may reclaim the memory gradually; no administrator password was requested.", Fmt.bytes(Int64(after))),
+                    : L("Memory in use is %@. macOS may reclaim the memory gradually; no administrator password was requested.", Fmt.bytes(Int64(after)))),
                 results: results,
                 bytes: Int64(freed)
             )
-            cleanupHistory.record(module: .health, action: L("Free Up Memory"), outcome: operation, detail: L("%d apps quit", results.filter { $0.success }.count), movedToTrash: false)
+            cleanupHistory.record(module: .health, action: L("Quit Selected Apps"), outcome: operation, detail: L("%d apps quit", results.filter { $0.success }.count), movedToTrash: false)
             setMessage(operation.message)
         }
     }
@@ -373,14 +374,12 @@ final class HealthModel: ObservableObject {
                     if !responding { unresponsive.append(app) }
                 }
             }
-            let stuck = snapshot.applications.filter { $0.responding == false }
-            let combined = Dictionary(grouping: unresponsive + stuck, by: \.pid).compactMap { $0.value.first }
-            unresponsiveProcesses = combined.sorted { $0.name < $1.name }
+            unresponsiveProcesses = unresponsive.sorted { $0.name < $1.name }
             lastResponsivenessCheck = Date()
-            if combined.isEmpty {
-                setMessage(L("Every app answered macOS. None appears unresponsive."))
+            if unresponsive.isEmpty {
+                setMessage(L("No app was confirmed unresponsive."))
             } else {
-                setMessage(L("%d apps did not respond. You can review them below.", combined.count))
+                setMessage(L("%d apps did not respond. You can review them below.", unresponsive.count))
             }
         }
     }

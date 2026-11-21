@@ -603,6 +603,11 @@ enum SelfTest {
             let broken = result.records.first { $0.bundleID == "com.test.broken" }
             try expect(broken?.status == .failed, "broken feed not reported")
 
+            _ = try makeApp("UpdaterTest", bundleID: "com.test.updater", version: "2.0.1", feedURL: feed.absoluteString)
+            let rechecked = runAsync {
+                await UpdaterScanner.scan(extraFolders: [], ignoreList: [], progress: { _ in }, cancelled: { false })
+            }
+            try expect(rechecked.records.first { $0.bundleID == "com.test.updater" }?.status == .upToDate, "recheck used stale bundle metadata")
             let ignored = runAsync {
                 await UpdaterScanner.scan(extraFolders: [], ignoreList: [sparkleApp.path], progress: { _ in }, cancelled: { false })
             }
@@ -623,6 +628,15 @@ enum SelfTest {
             try expect(L("Disk Cleanup") == "Schijfopruiming", "Dutch Disk Cleanup wrong")
             L10n.languageCode = previous
             return "both languages resolve"
+        }
+
+        runner.test("network rates restart after resets, removal or a sampling gap") {
+            let bytes: (received: UInt64, sent: UInt64) = (100, 200)
+            try expect(HealthSampler.networkRates(current: bytes, previous: (80, 160), elapsed: 2) == (10, 20), "normal rates")
+            try expect(HealthSampler.networkRates(current: bytes, previous: (120, 160), elapsed: 2) == (0, 0), "counter reset")
+            try expect(HealthSampler.networkRates(current: bytes, previous: nil, elapsed: 2) == (0, 0), "interface reappeared")
+            try expect(HealthSampler.networkRates(current: bytes, previous: (80, 160), elapsed: 300) == (0, 0), "sleep gap")
+            return "network baselines verified"
         }
 
         runner.test("health parsers read counters, swap and pressure safely") {
@@ -747,8 +761,11 @@ enum SelfTest {
             var skipped: [SkippedItem] = []
             _ = DiskCleanupScanner.scanLogs(ignoreList: [], skipped: &skipped, cancelled: { false })
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: denied.path)
-            try expect(skipped.contains { $0.reason.localizedCaseInsensitiveContains("permission") || $0.reason.localizedCaseInsensitiveContains("toestemming") }, "permission denial not reported")
-            return "permission denial recorded"
+            try expect(skipped.contains { $0.unreadable == true && $0.path.hasSuffix("/denied") }, "permission denial not reported")
+            var rescanned: [SkippedItem] = []
+            _ = DiskCleanupScanner.scanLogs(ignoreList: [], skipped: &rescanned, cancelled: { false })
+            try expect(!rescanned.contains { $0.path.hasSuffix("/denied") }, "permission failure persisted after access was restored")
+            return "permission denial and recovery recorded"
         }
     }
 }

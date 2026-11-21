@@ -37,6 +37,8 @@ enum AppearanceMode: String, CaseIterable, Identifiable, Codable, Sendable {
 /// sent anywhere. The ignore list and history live in separate JSON files.
 @MainActor
 final class AppSettings: ObservableObject {
+    private static let bundledFeedURL = (Bundle.main.object(forInfoDictionaryKey: "FettleFeedURL") as? String) ?? ""
+    private static let bundledPublicKey = (Bundle.main.object(forInfoDictionaryKey: "FettleFeedPublicKey") as? String) ?? ""
     private let defaults = UserDefaults.standard
 
     @Published var language: AppLanguage { didSet { defaults.set(language.rawValue, forKey: Keys.language); L10n.apply(language: language); objectWillChange.send() } }
@@ -129,8 +131,8 @@ final class AppSettings: ObservableObject {
         soundName = "Glass"
         externalDrivePrompt = false
         autoCheckUpdates = false
-        feedURL = ""
-        publicKey = ""
+        feedURL = Self.bundledFeedURL
+        publicKey = Self.bundledPublicKey
         largeFileThresholdMB = 100
         extraAppFolders = []
         lastUpdateCheck = nil
@@ -166,8 +168,8 @@ final class AppSettings: ObservableObject {
         soundName = defaults.string(forKey: Keys.soundName) ?? "Glass"
         externalDrivePrompt = defaults.object(forKey: Keys.externalDrivePrompt) as? Bool ?? false
         autoCheckUpdates = defaults.object(forKey: Keys.autoCheckUpdates) as? Bool ?? false
-        feedURL = defaults.string(forKey: Keys.feedURL) ?? ""
-        publicKey = defaults.string(forKey: Keys.publicKey) ?? ""
+        feedURL = defaults.string(forKey: Keys.feedURL) ?? Self.bundledFeedURL
+        publicKey = defaults.string(forKey: Keys.publicKey) ?? Self.bundledPublicKey
         largeFileThresholdMB = defaults.object(forKey: Keys.largeFileThreshold) as? Int ?? 100
         extraAppFolders = defaults.stringArray(forKey: Keys.extraAppFolders) ?? []
         lastUpdateCheck = defaults.object(forKey: Keys.lastUpdateCheck) as? Date

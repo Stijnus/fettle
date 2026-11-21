@@ -409,6 +409,11 @@ struct UpdaterRow: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
             }
+            if record.status == .noChannel {
+                Button(L("Open App"), action: onOpen)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
             Button(action: onInfo) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)

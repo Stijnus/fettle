@@ -84,7 +84,7 @@ enum MaintenanceScanner {
                 includingPropertiesForKeys: keys,
                 options: [.skipsHiddenFiles],
                 errorHandler: { url, error in
-                    permissionSkips.append(SkippedItem(path: PathDisplay.short(url.path), reason: DiskCleanupScanner.permissionReason(error), category: .brokenAlias))
+                    permissionSkips.append(SkippedItem(path: PathDisplay.short(url.path), reason: DiskCleanupScanner.permissionReason(error), category: .brokenAlias, unreadable: true))
                     return true
                 }
             ) else { continue }
@@ -174,7 +174,7 @@ enum MaintenanceScanner {
             }
             if FileSafety.isSymbolicLink(url) { continue }
             guard let data = try? Data(contentsOf: url) else {
-                skipped.append(SkippedItem(path: PathDisplay.short(url.path), reason: L("Permission denied"), category: .brokenPreference))
+                skipped.append(SkippedItem(path: PathDisplay.short(url.path), reason: L("Permission denied"), category: .brokenPreference, unreadable: true))
                 continue
             }
             var valid = false
@@ -224,7 +224,7 @@ enum MaintenanceScanner {
                 continue
             }
             guard let data = try? Data(contentsOf: url) else {
-                skipped.append(SkippedItem(path: PathDisplay.short(url.path), reason: L("Permission denied"), category: .invalidLaunchAgent))
+                skipped.append(SkippedItem(path: PathDisplay.short(url.path), reason: L("Permission denied"), category: .invalidLaunchAgent, unreadable: true))
                 continue
             }
             var dictionary: [String: Any]?

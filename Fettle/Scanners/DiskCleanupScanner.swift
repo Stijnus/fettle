@@ -149,7 +149,7 @@ enum DiskCleanupScanner {
             includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey, .fileSizeKey, .totalFileAllocatedSizeKey],
             options: [],
             errorHandler: { url, error in
-                permissionSkips.append(SkippedItem(path: PathDisplay.short(url.path), reason: permissionReason(error), category: .logs))
+                permissionSkips.append(SkippedItem(path: PathDisplay.short(url.path), reason: permissionReason(error), category: .logs, unreadable: true))
                 return true
             }
         ) else { return [] }
@@ -393,7 +393,7 @@ enum DiskCleanupScanner {
             includingPropertiesForKeys: keys,
             options: [],
             errorHandler: { url, error in
-                permissionSkips.append(SkippedItem(path: PathDisplay.short(url.path), reason: permissionReason(error), category: .largeFile))
+                permissionSkips.append(SkippedItem(path: PathDisplay.short(url.path), reason: permissionReason(error), category: .largeFile, unreadable: true))
                 return true
             }
         ) else {

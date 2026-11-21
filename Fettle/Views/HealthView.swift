@@ -555,11 +555,14 @@ struct HealthView: View {
                         .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
+            ForEach(snapshot.applications.filter(\.stillLaunching)) { process in
+                Text(L("Still launching: %@", process.displayName)).font(.caption)
+            }
             if model.lastResponsivenessCheck == nil {
                 Text(L("No check has run yet. Running apps that have not finished launching may need your attention."))
                     .font(.system(size: 10)).foregroundStyle(.secondary)
             } else if model.unresponsiveProcesses.isEmpty {
-                Label(L("Every app answered macOS. None appears unresponsive."), systemImage: "checkmark.circle.fill")
+                Label(L("No app was confirmed unresponsive."), systemImage: "checkmark.circle.fill")
                     .font(.system(size: 10.5)).foregroundStyle(Palette.green)
             } else {
                 ForEach(model.unresponsiveProcesses) { process in
@@ -598,7 +601,7 @@ struct HealthView: View {
                                 Button {
                                     model.showFreeMemory = true
                                 } label: {
-                                    Label(L("Free Up Memory…"), systemImage: "wind")
+                                    Label(L("Quit Selected Apps…"), systemImage: "wind")
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .tint(Palette.accent)
@@ -616,7 +619,7 @@ struct HealthView: View {
                     processSection(title: L("Largest memory users"), processes: snapshot.topMemory, isMemory: true)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(L("How memory works on a Mac")).font(.system(size: 11, weight: .semibold))
-                        Text(L("macOS uses free memory for caches and reclaims it when apps need it. A high “in use” figure is not automatically a problem; the pressure reading matters more. Fettle does not request an administrator password or force a system-wide purge. Free Up Memory asks selected apps to quit, which is the safe way for a normal app to release their memory."))
+                        Text(L("macOS uses free memory for caches and reclaims it when apps need it. A high “in use” figure is not automatically a problem; the pressure reading matters more. Fettle does not request an administrator password or force a system-wide purge. Quit Selected Apps asks selected apps to quit, which is the safe way for a normal app to release their memory."))
                             .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     .card(padding: 13, radius: 13)
@@ -714,7 +717,7 @@ struct HealthView: View {
                         Spacer()
                         if model.isEjecting { ProgressView().controlSize(.small) }
                     }
-                    notesCard(snapshot.notes + [L("SMART is the drive's own health report. “Not supported” means the drive or its enclosure does not expose it, not that the drive is healthy or failing. External drives may need to be connected directly to report SMART.")])
+                    notesCard(snapshot.notes + [L("SMART is the drive's own health report. “Health unavailable” means the drive or its enclosure does not expose it, not that the drive is healthy or failing. External drives may need to be connected directly to report SMART.")])
                 }
             } else {
                 loading
@@ -1143,7 +1146,13 @@ struct HealthTrendChart: View {
     var height: CGFloat
 
     private var points: [TrendPoint] {
-        samples.map { TrendPoint(date: $0.date, value: metric.value($0)) }
+        var previous: Date?
+        var segment = 0
+        return samples.map { sample in
+            if let previous, sample.date.timeIntervalSince(previous) > 90 { segment += 1 }
+            previous = sample.date
+            return TrendPoint(date: sample.date, value: metric.value(sample), segment: segment)
+        }
     }
 
     private var upper: Double {
@@ -1158,9 +1167,9 @@ struct HealthTrendChart: View {
     var body: some View {
         if points.count > 1 {
             Chart(points) { point in
-                AreaMark(x: .value("Time", point.date), y: .value(metric.title, point.value))
+                AreaMark(x: .value("Time", point.date), y: .value(metric.title, point.value), series: .value("Segment", point.segment))
                     .foregroundStyle(LinearGradient(colors: [tint.opacity(0.25), tint.opacity(0.01)], startPoint: .top, endPoint: .bottom))
-                LineMark(x: .value("Time", point.date), y: .value(metric.title, point.value))
+                LineMark(x: .value("Time", point.date), y: .value(metric.title, point.value), series: .value("Segment", point.segment))
                     .foregroundStyle(tint)
                     .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                     .interpolationMethod(.catmullRom)
@@ -1425,7 +1434,7 @@ struct FreeMemorySheet: View {
             HStack {
                 IconTile(symbol: "wind", tint: Palette.accent, size: 38)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Free Up Memory")).font(.system(size: 20, weight: .bold, design: .rounded))
+                    Text(L("Quit Selected Apps")).font(.system(size: 20, weight: .bold, design: .rounded))
                     Text(L("Ask selected apps to quit, then measure the memory macOS reports."))
                         .font(.system(size: 10.5)).foregroundStyle(.secondary)
                 }
@@ -1479,7 +1488,7 @@ struct FreeMemorySheet: View {
                 Button {
                     model.performFreeMemory(pids: selected)
                 } label: {
-                    Label(L("Free Up Memory"), systemImage: "wind")
+                    Label(L("Quit Selected Apps"), systemImage: "wind")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Palette.accent)

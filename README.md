@@ -76,13 +76,13 @@ signed ad hoc for local use and is not notarised for distribution.
 - **Mac Health** – live CPU, memory, disk, battery and network pages, plus a
   persisted Activity page. CPU and memory have trend lines, per-core load, top
   process lists and quit/force-quit with confirmation. Memory shows pressure,
-  swap and a Free Up Memory review that quits selected apps (never a system
+  swap and a Quit Selected Apps review that quits selected apps (never a system
   purge). Disk lists volumes, drive health/SMART data, I/O rates and Eject All.
   Battery shows charge, health, cycles, condition, temperature and adapter.
   Network shows counters, addresses and current rates. Six alert kinds cover
   memory pressure, high CPU, low disk, a large Trash, external drives and drive
   health. An opt-in Accessibility check reports apps that do not respond.
-- **Menu bar** – a popover with live readings, Scan, Free Up Memory, Eject All,
+- **Menu bar** – a popover with live readings, Scan, Quit Selected Apps, Eject All,
   settings and an at-a-glance battery/drive/busiest-process summary. Background
   mode keeps Fettle available after the window closes, and Open at Login uses
   the supported macOS login-item API.
@@ -126,7 +126,7 @@ update checks against an Ed25519-signed release feed.
   no credentials, keychains or password databases are read.
 - Mac Health readings are read-only. Process actions show the process name and
   revalidate its identity immediately before quitting; force quit is a separate
-  confirmed action. Free Up Memory only asks apps to quit and measures the
+  confirmed action. Quit Selected Apps only asks apps to quit and measures the
   result; it never requests an administrator password or forces a purge.
 - App Updater contacts only the feed URL an app publishes, through a
   cookie-free ephemeral session. It never downloads or runs an installer and
@@ -151,7 +151,7 @@ updater source detection, health parsers, alert evaluation, activity-history
 persistence, process-safety guards, persistence, localisation, signature
 verification and permission reporting. `--integration-test` drives
 the module models through scan → select → confirm → act with disposable
-fixtures, including quitting a disposable process, Free Up Memory, and ejecting
+fixtures, including quitting a disposable process, Quit Selected Apps, and ejecting
 a disposable disk image.
 
 `--health-probe` prints a live JSON snapshot of Mac Health without opening a
@@ -185,9 +185,9 @@ each macOS interface. The main ones:
   macOS builds; user LaunchAgents remain visible.
 - The Accessibility responsiveness check is opt-in. Without permission,
   Fettle only reports apps that macOS says have not finished launching.
-- Free Up Memory cannot perform a system-wide purge without administrator
+- Quit Selected Apps cannot perform a system-wide purge without administrator
   rights. It quits selected apps instead and measures the memory macOS reports.
-- SMART depends on the drive and enclosure. “Not supported” is not a health
+- SMART depends on the drive and enclosure. “Health unavailable” is not a health
   verdict; some external drives need a direct connection.
 - Network counters are reported since boot and may wrap after very long uptime.
 - Open at Login uses the macOS login-item API. Registration and unregistration
@@ -195,12 +195,12 @@ each macOS interface. The main ones:
   app may need to be registered again; the exact status is always shown.
 - Activity history exists only while Fettle is running; it keeps one numeric
   reading per minute for seven days and never stores process names.
-- Notifications require the user's permission. Update checks require a
-  configured signed feed.
+- Notifications require the user's permission. Official releases can include a signed update feed.
+  Local builds without a bundled feed need the URL and public key in Settings.
 
 ## Optional signed update feed
 
-Fettle checks updates only when you configure a feed in Settings. The feed is a
+Release builds can ship with a pinned public key and feed URL. On the release machine, create a persistent signing key once in a secure directory outside the checkout (`umask 077`, then `openssl rand -out fettle-feed.key 32` in a new directory). Back up this key securely. Set `FETTLE_FEED_KEY_FILE` to its absolute path for every official `make release`. The release script embeds the matching public key before code signing and emits `dist/feed.json` for the finished ZIP. Upload the feed alongside the ZIP on the matching stable GitHub release. Previously distributed builds without a pinned key still need manual configuration in Settings. The feed is a
 JSON object like:
 
 ```json
@@ -260,7 +260,7 @@ Gatekeeper blocks it until the user right-clicks the app → **Open**, or runs
 
 ```sh
 git tag v1.3 && git push origin v1.3
-gh release create v1.3 dist/Fettle-1.3.dmg dist/Fettle-1.3.zip dist/SHA256SUMS.txt \
+gh release create v1.3 dist/Fettle-1.3.dmg dist/Fettle-1.3.zip dist/SHA256SUMS.txt dist/feed.json \
   --title "Fettle 1.3" --generate-notes
 ```
 

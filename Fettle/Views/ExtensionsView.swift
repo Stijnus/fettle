@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExtensionsView: View {
     @ObservedObject var model: ExtensionsModel
+    @State private var refreshOnReturn = false
     @EnvironmentObject private var app: AppModel
     @Environment(\.colorScheme) private var scheme
 
@@ -40,7 +41,7 @@ struct ExtensionsView: View {
                 .controlSize(.large)
                 .disabled(model.isScanning)
                 Button {
-                    model.openLoginItemsSettings()
+                    refreshOnReturn = true; model.openLoginItemsSettings()
                 } label: {
                     Image(systemName: "gearshape")
                 }
@@ -80,14 +81,14 @@ struct ExtensionsView: View {
                                     SectionTitle(title: sectionTitle(group.kind), subtitle: sectionSubtitle(group.kind))
                                     Spacer()
                                     if group.kind == .system, let first = group.records.first {
-                                        Button(L("Open Login Items & Extensions")) { model.open(first) }
+                                        Button(L("Open Login Items & Extensions")) { refreshOnReturn = true; model.open(first) }
                                             .buttonStyle(.bordered)
                                             .controlSize(.small)
                                     }
                                 }
                                 VStack(spacing: 8) {
                                     ForEach(group.records) { record in
-                                        ExtensionRow(record: record, action: record.kind == .system ? nil : { model.open(record) })
+                                        ExtensionRow(record: record, action: record.kind == .system ? nil : { refreshOnReturn = true; model.open(record) })
                                     }
                                 }
                             }
@@ -114,6 +115,11 @@ struct ExtensionsView: View {
         .background(Palette.background(scheme))
         .overlay(alignment: .bottom) {
             if let toast = model.toast { ToastView(text: toast).padding(.bottom, 24) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            guard refreshOnReturn else { return }
+            refreshOnReturn = false
+            if !model.isScanning { model.startScan() }
         }
         .task {
             if model.records.isEmpty && !model.isScanning { model.startScan() }

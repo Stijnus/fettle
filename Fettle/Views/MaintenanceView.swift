@@ -32,6 +32,11 @@ struct MaintenanceView: View {
             .padding(.top, 22)
             .padding(.bottom, 12)
 
+            if !model.isScanning, let entry = model.report?.firstUnreadable {
+                BannerView(icon: "lock", title: L("Partial scan"), message: entry.path + " · " + entry.reason,
+                           tint: Palette.amber, actionTitle: L("Open Privacy Settings"), action: { SystemActions.openPrivacySettings() })
+                    .padding(.horizontal, 24)
+            }
             if model.isScanning {
                 ScanProgressBar(progress: model.progress, phase: model.phase) { model.cancel() }
                     .padding(.horizontal, 24)

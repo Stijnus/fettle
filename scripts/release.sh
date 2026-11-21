@@ -41,6 +41,12 @@ mkdir -p "$STAGE"
 ditto "$DERIVED/Build/Products/Release/$APP_NAME.app" "$STAGE/$APP_NAME.app"
 APP="$STAGE/$APP_NAME.app"
 
+if [[ -n "${FETTLE_FEED_KEY_FILE:-}" ]]; then
+  FEED_KEY=$(swift scripts/update-feed.swift "$FETTLE_FEED_KEY_FILE")
+  /usr/libexec/PlistBuddy -c "Add :FettleFeedPublicKey string $FEED_KEY" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Add :FettleFeedURL string https://github.com/Stijnus/fettle/releases/latest/download/feed.json" "$APP/Contents/Info.plist"
+fi
+
 # --- Sign -----------------------------------------------------------------
 IDENTITY="${SIGN_IDENTITY:-}"
 if [[ -z "$IDENTITY" ]]; then
@@ -104,5 +110,11 @@ rm -rf "$STAGE"
 (cd "$DIST" && shasum -a 256 "$APP_NAME-$VERSION.dmg" "$APP_NAME-$VERSION.zip" > SHA256SUMS.txt)
 
 echo
+if [[ -n "${FETTLE_FEED_KEY_FILE:-}" ]]; then
+  ZIP_HASH=$(awk -v zip="$APP_NAME-$VERSION.zip" '$2 == zip {print $1}' "$DIST/SHA256SUMS.txt")
+  [[ ${#ZIP_HASH} == 64 ]]
+  swift scripts/update-feed.swift "$FETTLE_FEED_KEY_FILE" "$VERSION" "$BUILD" \
+    "https://github.com/Stijnus/fettle/releases/download/v$VERSION/$APP_NAME-$VERSION.zip" "$ZIP_HASH" > "$DIST/feed.json"
+fi
 echo "Done: $APP_NAME $VERSION ($SIGNED)"
 ls -lh "$DIST"

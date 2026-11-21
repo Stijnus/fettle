@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginItemsView: View {
     @ObservedObject var model: LoginItemsModel
+    @State private var refreshOnReturn = false
     @EnvironmentObject private var app: AppModel
     @Environment(\.colorScheme) private var scheme
 
@@ -39,7 +40,7 @@ struct LoginItemsView: View {
                 .controlSize(.large)
                 .disabled(model.isScanning)
                 Button {
-                    model.openSystemSettings()
+                    refreshOnReturn = true; model.openSystemSettings()
                 } label: {
                     Image(systemName: "gearshape")
                 }
@@ -57,7 +58,7 @@ struct LoginItemsView: View {
                     .padding(.bottom, 10)
             }
 
-            if model.records.isEmpty && !model.isScanning {
+            if model.records.isEmpty && !model.isScanning && model.readableBackgroundItems {
                 EmptyStateView(icon: "person.badge.key", title: L("No login items were found."), message: L("Only user LaunchAgents can be switched here. System daemons are never touched."), actionTitle: L("Scan login items"), action: { model.startScan() })
             } else {
                 ScrollView {
@@ -71,7 +72,7 @@ struct LoginItemsView: View {
                                 SummaryFact(icon: "power", label: L("Loaded"), value: model.isScanning && model.records.isEmpty ? "—" : "\(model.records.filter { $0.status == L("Loaded") }.count)", tint: Palette.green, help: L("Startup status is read from launchd."))
                             ]
                         )
-                        if model.backgroundItemsTimedOut {
+                        if !model.isScanning && model.backgroundItemsTimedOut {
                             BannerView(
                                 icon: "clock",
                                 title: L("macOS took too long to report background items."),
@@ -80,14 +81,14 @@ struct LoginItemsView: View {
                                 actionTitle: L("Scan Again"),
                                 action: { model.startScan() }
                             )
-                        } else if !model.readableBackgroundItems {
+                        } else if model.lastScan != nil && !model.isScanning && !model.readableBackgroundItems {
                             BannerView(
                                 icon: "info.circle",
                                 title: L("Background item details are limited without Full Disk Access."),
                                 message: L("Fettle could not read the system background item list. It shows user LaunchAgents instead."),
                                 tint: Palette.amber,
                                 actionTitle: L("Open Privacy Settings"),
-                                action: { SystemActions.openPrivacySettings() }
+                                action: { refreshOnReturn = true; SystemActions.openPrivacySettings() }
                             )
                         }
                         if !visibleManageable.isEmpty {
@@ -98,7 +99,7 @@ struct LoginItemsView: View {
                                         LoginRow(record: record) {
                                             model.requestToggle(record)
                                         } openSettings: {
-                                            model.openSystemSettings()
+                                            refreshOnReturn = true; model.openSystemSettings()
                                         }
                                     }
                                 }
@@ -110,9 +111,9 @@ struct LoginItemsView: View {
                                 VStack(spacing: 8) {
                                     ForEach(visibleBackground.prefix(120)) { record in
                                         LoginRow(record: record) {
-                                            model.openSystemSettings()
+                                            refreshOnReturn = true; model.openSystemSettings()
                                         } openSettings: {
-                                            model.openSystemSettings()
+                                            refreshOnReturn = true; model.openSystemSettings()
                                         }
                                     }
                                 }
@@ -143,6 +144,11 @@ struct LoginItemsView: View {
         .sheet(item: $model.outcome) { outcome in OutcomeSheet(outcome: outcome) }
         .overlay(alignment: .bottom) {
             if let toast = model.toast { ToastView(text: toast).padding(.bottom, 24) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            guard refreshOnReturn else { return }
+            refreshOnReturn = false
+            if !model.isScanning { model.startScan() }
         }
         .task {
             if model.records.isEmpty && !model.isScanning { model.startScan() }

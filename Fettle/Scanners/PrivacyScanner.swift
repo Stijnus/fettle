@@ -188,9 +188,6 @@ enum PrivacyScanner {
             isRunning: running
         )
         let safariLocation = "Safari"
-        guard FileManager.default.fileExists(atPath: root.path) || FileManager.default.fileExists(atPath: container.path) else {
-            return ([], nil)
-        }
 
         items += add(file: root.appendingPathComponent("History.db"), category: .browsingHistory, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Cookies and site data sign you out"), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         items += add(file: root.appendingPathComponent("Downloads.plist"), category: .downloadHistory, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Downloaded files are kept. Only the list of downloads is cleared."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
@@ -200,7 +197,8 @@ enum PrivacyScanner {
         for name in ["LocalStorage", "Databases", "WebsiteData"] {
             items += add(file: root.appendingPathComponent(name), category: .websiteData, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Opening this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         }
-        return (items, profile)
+        let hasProfile = !items.isEmpty || FileManager.default.fileExists(atPath: root.path) || FileManager.default.fileExists(atPath: container.path)
+        return (items, hasProfile ? profile : nil)
     }
 
     // MARK: Chromium
@@ -225,7 +223,7 @@ enum PrivacyScanner {
         var items: [ScanItem] = []
         var profiles: [BrowserProfileSummary] = []
         let running = SystemActions.isRunning(bundleID: browser.bundleID)
-        for root in roots where FileManager.default.fileExists(atPath: root.path) {
+        for root in roots where readableProfileDirectory(root, skipped: &skipped) {
             for profileURL in ExtensionsScanner.discoverChromiumProfiles(root: root) {
                 if cancelled() { break }
                 let profileName = profileURL.standardizedFileURL == root.standardizedFileURL ? "Default" : profileURL.lastPathComponent
@@ -259,13 +257,21 @@ enum PrivacyScanner {
 
     // MARK: Firefox
 
+    private static func readableProfileDirectory(_ url: URL, skipped: inout [SkippedItem]) -> Bool {
+        guard access(url.path, R_OK | X_OK) != 0 else { return true }
+        if errno == EACCES || errno == EPERM {
+            skipped.append(SkippedItem(path: PathDisplay.short(url.path), reason: L("Permission denied"), category: nil, unreadable: true))
+        }
+        return false
+    }
+
     static func scanFirefox(
         ignoreList: [String],
         skipped: inout [SkippedItem],
         cancelled: @escaping @Sendable () -> Bool
     ) -> (items: [ScanItem], profiles: [BrowserProfileSummary]) {
         let root = AppPaths.applicationSupport.appendingPathComponent("Firefox/Profiles", isDirectory: true)
-        guard FileManager.default.fileExists(atPath: root.path) else { return ([], []) }
+        guard readableProfileDirectory(root, skipped: &skipped) else { return ([], []) }
         let running = SystemActions.isRunning(bundleID: BrowserKind.firefox.bundleID)
         var items: [ScanItem] = []
         var profiles: [BrowserProfileSummary] = []
@@ -306,7 +312,13 @@ enum PrivacyScanner {
         cancelled: @escaping @Sendable () -> Bool
     ) -> [ScanItem] {
         guard !cancelled() else { return [] }
-        guard FileManager.default.fileExists(atPath: file.path) else { return [] }
+        var metadata = stat()
+        guard lstat(file.path, &metadata) == 0 else {
+            if errno == EACCES || errno == EPERM {
+                skipped.append(SkippedItem(path: PathDisplay.short(file.path), reason: L("Permission denied"), category: category, unreadable: true))
+            }
+            return []
+        }
         if FileSafety.isSymbolicLink(file) {
             skipped.append(SkippedItem(path: PathDisplay.short(file.path), reason: L("Symbolic links"), category: category))
             return []
@@ -315,8 +327,8 @@ enum PrivacyScanner {
             skipped.append(SkippedItem(path: PathDisplay.short(file.path), reason: L("This folder is on the ignore list."), category: category))
             return []
         }
-        guard let fingerprint = FileSafety.fingerprint(of: file) else {
-            skipped.append(SkippedItem(path: PathDisplay.short(file.path), reason: L("Permission denied"), category: category))
+        guard FileManager.default.isReadableFile(atPath: file.path), let fingerprint = FileSafety.fingerprint(of: file) else {
+            skipped.append(SkippedItem(path: PathDisplay.short(file.path), reason: L("Permission denied"), category: category, unreadable: true))
             return []
         }
         var item = ScanItem.make(

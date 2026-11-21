@@ -201,14 +201,14 @@ enum IntegrationTest {
                     sleep.waitUntilExit()
                 }
 
-                // Free Up Memory on a disposable process and verify the outcome is recorded.
+                // Quit Selected Apps on a disposable process and verify the outcome is recorded.
                 if let sleep = spawnSleep() {
                     await app.health.refreshNow()
                     let before = app.history.events.count
                     app.health.performFreeMemory(pids: [sleep.processIdentifier])
                     await waitUntil { app.history.events.count > before }
-                    check(app.history.events.first?.module == .health, "Free Up Memory was not recorded")
-                    check(!ProcessActions.isRunning(sleep.processIdentifier), "Free Up Memory left the disposable process running")
+                    check(app.history.events.first?.module == .health, "Quit Selected Apps was not recorded")
+                    check(!ProcessActions.isRunning(sleep.processIdentifier), "Quit Selected Apps left the disposable process running")
                     sleep.waitUntilExit()
                 }
 

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PrivacyView: View {
     @ObservedObject var model: PrivacyModel
+    @State private var refreshOnReturn = false
     @EnvironmentObject private var app: AppModel
     @Environment(\.colorScheme) private var scheme
     @State private var detailItem: ScanItem?
@@ -56,7 +57,7 @@ struct PrivacyView: View {
                     }
                     Divider()
                     Button(L("Open Privacy Settings")) {
-                        SystemActions.openPrivacySettings()
+                        refreshOnReturn = true; SystemActions.openPrivacySettings()
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -70,6 +71,11 @@ struct PrivacyView: View {
             .padding(.top, 22)
             .padding(.bottom, 12)
 
+            if !model.isScanning, let entry = model.report?.firstUnreadable {
+                BannerView(icon: "lock", title: L("Partial scan"), message: entry.path + " · " + entry.reason,
+                           tint: Palette.amber, actionTitle: L("Open Privacy Settings"), action: { refreshOnReturn = true; SystemActions.openPrivacySettings() })
+                    .padding(.horizontal, 24)
+            }
             if model.isScanning {
                 ScanProgressBar(progress: model.progress, phase: model.phase) { model.cancel() }
                     .padding(.horizontal, 24)
@@ -149,6 +155,11 @@ struct PrivacyView: View {
         .sheet(isPresented: $showSkipped) { SkippedSheet(skipped: model.skipped) }
         .overlay(alignment: .bottom) {
             if let toast = model.toast { ToastView(text: toast).padding(.bottom, 70) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            guard refreshOnReturn else { return }
+            refreshOnReturn = false
+            if !model.isScanning { model.startScan() }
         }
         .task {
             if model.report == nil && !model.isScanning { model.startScan() }
@@ -234,9 +245,9 @@ struct PrivacyView: View {
                 Text(model.recentItems.map { "\($0.name) \($0.count)" }.joined(separator: " · "))
                     .font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1)
             }
-            Button(L("Open Finder")) { SystemActions.openFinderHome() }
+            Button(L("Open Finder")) { refreshOnReturn = true; SystemActions.openFinderHome() }
                 .buttonStyle(.bordered).controlSize(.small)
-            Button(L("Open Desktop & Dock Settings")) { SystemActions.openSettings(.desktopDock) }
+            Button(L("Open Desktop & Dock Settings")) { refreshOnReturn = true; SystemActions.openSettings(.desktopDock) }
                 .buttonStyle(.bordered).controlSize(.small)
         }
         .padding(11)
