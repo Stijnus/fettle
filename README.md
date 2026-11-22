@@ -81,6 +81,8 @@ A complete dark appearance and English/Dutch interface strings ship too.
 
 ## What's inside
 
+The name is the promise: *in fine fettle* means in good health and good condition.
+
 | Module | What it does |
 | --- | --- |
 | **Overview** | Disk usage, the live Mac Health strip, last scan and results by module. One read-only **Scan** action, and a clear separation between estimated removable bytes, bytes moved to the Trash and macOS's reported free space. When a scan could not read something, Overview says so and the module shows the skipped path and reason. |
