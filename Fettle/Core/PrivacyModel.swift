@@ -127,7 +127,7 @@ final class PrivacyModel: ObservableObject {
         let includesCookies = chosen.contains { $0.category == .cookies || $0.category == .websiteData }
         var message = L("Selected caches, cookies, history and download records will be moved to the Trash or cleared with the browser's own database. Downloaded files are never deleted.")
         if includesCookies {
-            message += "\n\n" + L("Opening this data will sign you out of websites.")
+            message += "\n\n" + L("Clearing this data will sign you out of websites.")
         }
         confirmation = ConfirmationRequest(
             title: L("Clear %d browser items?", chosen.count),
