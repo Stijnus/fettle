@@ -626,6 +626,8 @@ enum SelfTest {
             L10n.languageCode = "nl"
             try expect(L("Scan") == "Scannen", "Dutch Scan wrong")
             try expect(L("Disk Cleanup") == "Schijfopruiming", "Dutch Disk Cleanup wrong")
+            try expect(L("Clearing this data will sign you out of websites.") == "Deze gegevens wissen logt je uit bij websites.", "Dutch sign-out warning missing")
+            try expect(L("Clearing history removes the list of sites you visited. You stay signed in.") == "Geschiedenis wissen verwijdert de lijst met bezochte websites. Je blijft ingelogd.", "Dutch history note missing")
             L10n.languageCode = previous
             return "both languages resolve"
         }

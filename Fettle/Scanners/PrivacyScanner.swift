@@ -189,13 +189,13 @@ enum PrivacyScanner {
         )
         let safariLocation = "Safari"
 
-        items += add(file: root.appendingPathComponent("History.db"), category: .browsingHistory, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Cookies and site data sign you out"), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+        items += add(file: root.appendingPathComponent("History.db"), category: .browsingHistory, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Clearing history removes the list of sites you visited. You stay signed in."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         items += add(file: root.appendingPathComponent("Downloads.plist"), category: .downloadHistory, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Downloaded files are kept. Only the list of downloads is cleared."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         items += add(file: container.appendingPathComponent("Library/Cookies/Cookies.binarycookies"), category: .cookies, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Cookies and site data sign you out"), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         items += add(file: AppPaths.safariCaches, category: .browserCache, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Clearing cache does not sign you out."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         items += add(file: AppPaths.caches.appendingPathComponent("com.apple.Safari.SafeBrowsing"), category: .browserCache, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Clearing cache does not sign you out."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         for name in ["LocalStorage", "Databases", "WebsiteData"] {
-            items += add(file: root.appendingPathComponent(name), category: .websiteData, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Opening this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+            items += add(file: root.appendingPathComponent(name), category: .websiteData, browser: .safari, profile: "Safari", running: running, location: safariLocation, detail: L("Clearing this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
         }
         let hasProfile = !items.isEmpty || FileManager.default.fileExists(atPath: root.path) || FileManager.default.fileExists(atPath: container.path)
         return (items, hasProfile ? profile : nil)
@@ -241,13 +241,13 @@ enum PrivacyScanner {
                 }
                 let cookies = ["Cookies", "Network/Cookies"]
                 for cookie in cookies {
-                    items += add(file: profileURL.appendingPathComponent(cookie), category: .cookies, browser: browser, profile: profileName, running: running, location: location, detail: L("Opening this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+                    items += add(file: profileURL.appendingPathComponent(cookie), category: .cookies, browser: browser, profile: profileName, running: running, location: location, detail: L("Clearing this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
                 }
                 for website in ["Local Storage", "Session Storage", "IndexedDB", "WebSQL", "Service Worker", "CacheStorage", "File System"] {
-                    items += add(file: profileURL.appendingPathComponent(website), category: .websiteData, browser: browser, profile: profileName, running: running, location: location, detail: L("Opening this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+                    items += add(file: profileURL.appendingPathComponent(website), category: .websiteData, browser: browser, profile: profileName, running: running, location: location, detail: L("Clearing this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
                 }
                 for history in ["History", "Top Sites", "Visited Links"] {
-                    items += add(file: profileURL.appendingPathComponent(history), category: .browsingHistory, browser: browser, profile: profileName, running: running, location: location, detail: L("Cookies and site data sign you out"), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+                    items += add(file: profileURL.appendingPathComponent(history), category: .browsingHistory, browser: browser, profile: profileName, running: running, location: location, detail: L("Clearing history removes the list of sites you visited. You stay signed in."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
                 }
                 items += add(file: profileURL.appendingPathComponent("History"), category: .downloadHistory, browser: browser, profile: profileName, running: running, location: location, detail: L("Downloaded files are kept. Only the list of downloads is cleared."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
             }
@@ -287,11 +287,11 @@ enum PrivacyScanner {
             ))
             let location = "Firefox — \(profileName)"
             items += add(file: profileURL.appendingPathComponent("cache2"), category: .browserCache, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Clearing cache does not sign you out."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
-            items += add(file: profileURL.appendingPathComponent("cookies.sqlite"), category: .cookies, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Opening this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
-            items += add(file: profileURL.appendingPathComponent("places.sqlite"), category: .browsingHistory, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Cookies and site data sign you out"), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+            items += add(file: profileURL.appendingPathComponent("cookies.sqlite"), category: .cookies, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Clearing this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+            items += add(file: profileURL.appendingPathComponent("places.sqlite"), category: .browsingHistory, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Clearing history removes the list of sites you visited. You stay signed in."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
             items += add(file: profileURL.appendingPathComponent("places.sqlite"), category: .downloadHistory, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Downloaded files are kept. Only the list of downloads is cleared."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
             for website in ["storage", "IndexedDB", "sessionstore-backups"] {
-                items += add(file: profileURL.appendingPathComponent(website), category: .websiteData, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Opening this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
+                items += add(file: profileURL.appendingPathComponent(website), category: .websiteData, browser: .firefox, profile: profileName, running: running, location: location, detail: L("Clearing this data will sign you out of websites."), ignoreList: ignoreList, skipped: &skipped, cancelled: cancelled)
             }
         }
         return (items, profiles)
