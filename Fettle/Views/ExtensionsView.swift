@@ -166,7 +166,7 @@ struct ExtensionRow: View {
                 Text(detailLine)
                     .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
                 if let note = record.note, !note.isEmpty {
-                    Text(note).font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1)
+                    Text(record.kind == .system ? L(note) : note).font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1)
                 }
             }
             Spacer()

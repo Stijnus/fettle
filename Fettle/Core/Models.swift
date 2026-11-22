@@ -323,7 +323,7 @@ struct ConfirmationRequest: Identifiable {
     var id = UUID()
     var title: String
     var message: String
-    var actionLabel: String
+    var actionLabelKey: String
     var isPermanent: Bool
     var requiresTyping: String?
     var itemCount: Int
@@ -373,6 +373,26 @@ struct HistoryEvent: Identifiable, Codable, Hashable, Sendable {
     var outcome: String
     var detail: String?
     var movedToTrash: Bool? = true
+
+    // Older history files contain translated labels in these same two fields.
+    // Restrict the reverse lookup to labels actually used by cleanup history.
+    private static let legacyLabels: [String: String] = {
+        let keys = [
+            "Move to Trash", "Repair selected…", "Empty Trash", "Permanent Delete",
+            "Remove apps", "Leftovers from removed apps", "Open app updates",
+            "Clear browser data", "Enable", "Disable", "Force Quit", "Quit Process",
+            "Quit Selected Apps", "Eject All", "Cancelled", "Failed",
+            "Some items could not be removed", "Completed"
+        ]
+        var labels: [String: String] = [:]
+        for key in keys {
+            if let translation = L10n.dutch[key] { labels[translation] = key }
+        }
+        return labels
+    }()
+
+    var displayAction: String { L(Self.legacyLabels[action] ?? action) }
+    var displayOutcome: String { L(Self.legacyLabels[outcome] ?? outcome) }
 }
 
 // MARK: - Apps and associations

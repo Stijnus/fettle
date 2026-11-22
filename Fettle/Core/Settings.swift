@@ -286,21 +286,21 @@ final class HistoryStore: ObservableObject {
         save()
     }
 
-    func record(module: ModuleID, action: String, outcome: OperationOutcome, detail: String? = nil, movedToTrash: Bool = true) {
+    func record(module: ModuleID, actionKey: String, outcome: OperationOutcome, detail: String? = nil, movedToTrash: Bool = true) {
         let state: String
         if outcome.cancelled {
-            state = L("Cancelled")
+            state = "Cancelled"
         } else if outcome.failureCount > 0 && outcome.successCount == 0 {
-            state = L("Failed")
+            state = "Failed"
         } else if outcome.failureCount > 0 {
-            state = L("Some items could not be removed")
+            state = "Some items could not be removed"
         } else {
-            state = L("Completed")
+            state = "Completed"
         }
         record(HistoryEvent(
             date: outcome.finishedAt,
             module: module,
-            action: action,
+            action: actionKey,
             itemCount: outcome.successCount,
             bytes: outcome.touchedBytes,
             outcome: state,
@@ -438,6 +438,10 @@ enum Fmt {
     static func list(_ names: [String]) -> String {
         guard names.count > 1, let last = names.last else { return names.first ?? "" }
         return names.dropLast().joined(separator: ", ") + " " + L("and") + " " + last
+    }
+
+    static func availableUpdates(_ count: Int) -> String {
+        count == 1 ? L("1 update available") : L("%d updates available", count)
     }
 
     static func associatedFiles(_ count: Int) -> String {

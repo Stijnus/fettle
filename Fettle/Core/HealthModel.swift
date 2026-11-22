@@ -23,7 +23,7 @@ final class HealthModel: ObservableObject {
     @Published var showEjectConfirmation = false
     @Published private(set) var isEjecting = false
     @Published var accessibilityPrompt: AccessibilityPrompt?
-    @Published var trashBytes: Int64 = 0
+    @Published var trashBytes: Int64?
 
     private var monitorTask: Task<Void, Never>?
     private var messageTask: Task<Void, Never>?
@@ -210,7 +210,7 @@ final class HealthModel: ObservableObject {
             }
         }
 
-        if settings.trashReminder {
+        if settings.trashReminder, let trashBytes {
             let threshold = Int64(settings.trashThresholdMB) * 1_000_000
             if trashBytes > threshold, threshold > 0 {
                 alerts.append(HealthAlert(
@@ -270,8 +270,8 @@ final class HealthModel: ObservableObject {
         evaluateAlerts(snapshot)
     }
 
-    var highestSeverity: HealthSeverity {
-        activeAlerts.map(\.severity).max() ?? .good
+    var highestSeverity: HealthSeverity? {
+        activeAlerts.map(\.severity).max() ?? (snapshot == nil ? nil : .good)
     }
 
     var statusHeadline: String {
@@ -305,7 +305,7 @@ final class HealthModel: ObservableObject {
             results: [item],
             bytes: 0
         )
-        cleanupHistory.record(module: .health, action: request.force ? L("Force Quit") : L("Quit Process"), outcome: operation, detail: request.process.displayName, movedToTrash: false)
+        cleanupHistory.record(module: .health, actionKey: request.force ? "Force Quit" : "Quit Process", outcome: operation, detail: request.process.displayName, movedToTrash: false)
         setMessage(outcome.1)
         Task {
             try? await Task.sleep(nanoseconds: 600_000_000)
@@ -353,7 +353,7 @@ final class HealthModel: ObservableObject {
                 results: results,
                 bytes: Int64(freed)
             )
-            cleanupHistory.record(module: .health, action: L("Quit Selected Apps"), outcome: operation, detail: L("%d apps quit", results.filter { $0.success }.count), movedToTrash: false)
+            cleanupHistory.record(module: .health, actionKey: "Quit Selected Apps", outcome: operation, detail: L("%d apps quit", results.filter { $0.success }.count), movedToTrash: false)
             setMessage(operation.message)
         }
     }
@@ -440,7 +440,7 @@ final class HealthModel: ObservableObject {
                 results: results.map { ItemResult(path: $0.volume, name: $0.volume, category: nil, success: $0.success, message: $0.success ? nil : $0.message, bytes: 0) },
                 bytes: 0
             )
-            cleanupHistory.record(module: .health, action: L("Eject All"), outcome: outcome, detail: nil, movedToTrash: false)
+            cleanupHistory.record(module: .health, actionKey: "Eject All", outcome: outcome, detail: nil, movedToTrash: false)
             setMessage(outcome.message)
             try? await Task.sleep(nanoseconds: 800_000_000)
             await refreshNow(rescanDisks: true)

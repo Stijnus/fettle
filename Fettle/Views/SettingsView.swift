@@ -352,8 +352,6 @@ struct SettingsView: View {
                 .background(RoundedRectangle(cornerRadius: 12).fill(Palette.card(scheme)))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.stroke(scheme), lineWidth: 1))
             }
-            Text(L("Add to Ignore List") + " — " + L("Ignore lists are stored only on this Mac."))
-                .font(.system(size: 9.5)).foregroundStyle(.tertiary)
         }
     }
 

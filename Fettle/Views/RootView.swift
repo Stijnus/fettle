@@ -215,7 +215,7 @@ struct SidebarView: View {
             let count = app.disk.items.filter { $0.category != .trash && !$0.isInformational && !$0.isProtected }.count
             return count > 0 ? "\(count)" : nil
         case .maintenance:
-            let count = app.maintenance.items.filter { !$0.isInformational }.count
+            let count = app.maintenance.findingCount
             return count > 0 ? "\(count)" : nil
         case .uninstaller:
             return app.uninstaller.apps.isEmpty ? nil : "\(app.uninstaller.apps.count)"
@@ -293,7 +293,7 @@ struct ModuleDetailView: View {
         Group {
             switch app.selectedModule {
             case .overview:
-                OverviewView()
+                OverviewView(health: app.health)
             case .health:
                 HealthView(model: app.health)
             case .disk:

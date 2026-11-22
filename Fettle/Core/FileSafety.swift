@@ -78,36 +78,43 @@ enum FileSafety {
     }
 
     /// Walks a directory without following symbolic links. Returns allocated bytes
-    /// and the number of regular files and folders seen.
-    static func directorySize(_ url: URL, deadline: TimeInterval = 25) -> (size: Int64, count: Int) {
+    /// and entries seen, with a flag indicating whether the walk finished.
+    static func directorySize(_ url: URL, deadline: TimeInterval = 25) -> (size: Int64, count: Int, complete: Bool) {
         let keys: [URLResourceKey] = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey, .fileSizeKey, .totalFileAllocatedSizeKey]
+        var complete = true
         guard let enumerator = FileManager.default.enumerator(
             at: url,
             includingPropertiesForKeys: keys,
             options: [],
-            errorHandler: { _, _ in true }
+            errorHandler: { _, _ in
+                complete = false
+                return true
+            }
         ) else {
-            return (0, 0)
+            return (0, 0, false)
         }
         var total: Int64 = 0
         var count = 0
         let start = Date()
         for case let child as URL in enumerator {
-            if Date().timeIntervalSince(start) > deadline { break }
-            let values = try? child.resourceValues(forKeys: Set(keys))
-            if values?.isSymbolicLink == true {
+            if Date().timeIntervalSince(start) > deadline { return (total, count, false) }
+            guard let values = try? child.resourceValues(forKeys: Set(keys)) else {
+                complete = false
+                continue
+            }
+            if values.isSymbolicLink == true {
                 enumerator.skipDescendants()
                 continue
             }
-            if values?.isRegularFile == true {
-                total += Int64(values?.totalFileAllocatedSize ?? values?.fileSize ?? 0)
+            if values.isRegularFile == true {
+                total += Int64(values.totalFileAllocatedSize ?? values.fileSize ?? 0)
                 count += 1
-            } else if values?.isDirectory == true {
+            } else if values.isDirectory == true {
                 count += 1
             }
-            if count > 500_000 { break }
+            if count > 500_000 { return (total, count, false) }
         }
-        return (total, count)
+        return (total, count, complete)
     }
 
     static func allocatedSize(of url: URL) -> Int64 {

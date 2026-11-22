@@ -169,7 +169,7 @@ class BaseScanModel: ObservableObject {
         confirmation = ConfirmationRequest(
             title: title ?? L("Move %d items to the Trash?", chosen.count),
             message: message ?? L("These items will be moved to the Trash. You can restore them from the Trash until you empty it."),
-            actionLabel: label ?? L("Move to Trash"),
+            actionLabelKey: label ?? "Move to Trash",
             isPermanent: false,
             itemCount: chosen.count,
             byteCount: bytes,
@@ -191,11 +191,11 @@ class BaseScanModel: ObservableObject {
                 FileSafety.moveToTrash(items, scope: scope, extraRoots: roots, ignoreList: ignore)
             }.value
             self.isWorking = false
-            self.apply(outcome, action: request.actionLabel)
+            self.apply(outcome, actionKey: request.actionLabelKey)
         }
     }
 
-    func apply(_ outcome: OperationOutcome, action: String, movedToTrash: Bool = true) {
+    func apply(_ outcome: OperationOutcome, actionKey: String, movedToTrash: Bool = true) {
         self.outcome = outcome
         let succeededPaths = Set(outcome.results.filter { $0.success }.map { $0.path })
         let remainingFailed = items.filter { item in
@@ -207,7 +207,7 @@ class BaseScanModel: ObservableObject {
             report = current
         }
         selectedIDs = Set(remainingFailed)
-        history.record(module: module, action: action, outcome: outcome, movedToTrash: movedToTrash)
+        history.record(module: module, actionKey: actionKey, outcome: outcome, movedToTrash: movedToTrash)
         SoundPlayer.playSuccess(enabled: settings.soundEnabled, name: settings.soundName)
         if outcome.successCount == 0 && outcome.failureCount > 0 {
             toast(L("Some items could not be removed"))
@@ -312,7 +312,7 @@ final class DiskCleanupModel: BaseScanModel {
             confirmation = ConfirmationRequest(
                 title: L("Permanently erase %d items (%@)?", chosen.count, Fmt.bytes(chosen.reduce(0) { $0 + $1.size })),
                 message: L("These paths will be erased immediately. There is no Trash and no undo."),
-                actionLabel: L("Delete Permanently"),
+                actionLabelKey: "Delete Permanently",
                 isPermanent: true,
                 itemCount: chosen.count,
                 byteCount: chosen.reduce(0) { $0 + $1.size },
@@ -334,7 +334,7 @@ final class DiskCleanupModel: BaseScanModel {
                     FileSafety.permanentlyDelete(items)
                 }.value
                 self.isWorking = false
-                self.apply(outcome, action: L("Permanent Delete"), movedToTrash: false)
+                self.apply(outcome, actionKey: "Permanent Delete", movedToTrash: false)
             }
             return
         }
@@ -348,7 +348,7 @@ final class DiskCleanupModel: BaseScanModel {
                     FileSafety.emptyTrash(reviewed, ignoreList: ignore)
                 }.value
                 self.isWorking = false
-                self.apply(outcome, action: L("Empty Trash"), movedToTrash: false)
+                self.apply(outcome, actionKey: "Empty Trash", movedToTrash: false)
             }
             return
         }
@@ -364,7 +364,7 @@ final class DiskCleanupModel: BaseScanModel {
         confirmation = ConfirmationRequest(
             title: L("Empty %d Trash items permanently?", trash.count),
             message: L("This permanently erases the contents of your Trash. It cannot be undone."),
-            actionLabel: L("Empty Trash"),
+            actionLabelKey: "Empty Trash",
             isPermanent: true,
             itemCount: trash.count,
             byteCount: trash.reduce(0) { $0 + $1.size },
@@ -408,10 +408,12 @@ final class MaintenanceModel: BaseScanModel {
             items: chosen,
             title: L("Repair %d findings?", chosen.count),
             message: L("Repaired items are moved to the Trash, so you can put them back. System and live app data are never included."),
-            label: L("Repair selected…")
+            label: "Repair selected…"
         )
     }
 
+    var findingCount: Int { items.filter { !$0.isInformational }.count }
+    var brokenPreferences: [ScanItem] { items.filter { $0.category == .brokenPreference && !$0.isInformational } }
     var brokenAliases: [ScanItem] { items.filter { $0.category == .brokenAlias } }
     var invalidAgents: [ScanItem] { items.filter { $0.category == .invalidLaunchAgent && !$0.isInformational } }
     var leftovers: [ScanItem] { items.filter { $0.category == .leftover && !$0.isInformational } }

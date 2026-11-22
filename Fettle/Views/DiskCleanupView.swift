@@ -83,6 +83,7 @@ struct DiskCleanupView: View {
                 )
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Palette.background(scheme))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if model.report != nil {

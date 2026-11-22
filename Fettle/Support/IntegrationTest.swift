@@ -27,6 +27,9 @@ enum IntegrationTest {
                     }
                 }
 
+                await app.refreshLiveTrashSize()
+                check((app.trashBytesLive ?? 0) > 0, "fixture Trash size was not measured")
+
                 await app.disk.runScan()
                 check(!app.disk.items.isEmpty, "disk scan found nothing")
                 let selectable = app.disk.items.filter { app.disk.isSelectable($0) && $0.category != .trash }.prefix(2)
@@ -43,6 +46,8 @@ enum IntegrationTest {
                 let alias = home.appendingPathComponent("Desktop/Integration Alias")
                 try? FileManager.default.createSymbolicLink(atPath: alias.path, withDestinationPath: "/no/such/integration")
                 await app.maintenance.runScan()
+                check(!app.maintenance.brokenPreferences.isEmpty, "fixture should include damaged preferences")
+                check(app.summary(for: .maintenance).itemCount == app.maintenance.items.filter { !$0.isInformational }.count, "maintenance finding counts disagree")
                 if let finding = app.maintenance.items.first(where: { $0.category == .brokenAlias && !$0.isInformational }) {
                     app.maintenance.selectedIDs = [finding.id]
                     app.maintenance.repairSelected()
@@ -220,10 +225,13 @@ enum IntegrationTest {
                     if attach.succeeded, let mountLine = attach.stdout.components(separatedBy: .newlines).last(where: { $0.contains("/Volumes/") }) {
                         let mountPath = mountLine.components(separatedBy: .whitespaces).last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                         await app.health.refreshNow(rescanDisks: true)
-                        check(app.health.snapshot?.ejectableVolumes.contains { $0.name == "FettleFixture" } == true, "disk image was not listed as ejectable")
-                        app.health.ejectAll()
-                        await waitUntil { !app.health.isEjecting }
-                        check(!FileManager.default.fileExists(atPath: mountPath), "Eject All left the disk image mounted")
+                        if app.health.snapshot?.ejectableVolumes.map(\.mountPath) == [mountPath] {
+                            app.health.ejectAll()
+                            await waitUntil { !app.health.isEjecting }
+                            check(!FileManager.default.fileExists(atPath: mountPath), "Eject All left the disk image mounted")
+                        } else {
+                            failures.append("Eject All requires the fixture to be the only ejectable volume")
+                        }
                     } else {
                         failures.append("could not attach the disposable disk image")
                     }

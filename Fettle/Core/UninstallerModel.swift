@@ -167,7 +167,7 @@ final class UninstallerModel: ObservableObject {
         confirmation = ConfirmationRequest(
             title: L("Remove %d apps and %d associated items?", chosenApps.count, items.count - chosenApps.count),
             message: message,
-            actionLabel: L("Remove"),
+            actionLabelKey: "Remove",
             isPermanent: false,
             itemCount: items.count,
             byteCount: bytes,
@@ -236,7 +236,7 @@ final class UninstallerModel: ObservableObject {
             self.reviewAppIDs = self.reviewAppIDs.filter { id in self.reviewApps.contains(where: { $0.id == id }) }
             self.reviewAssociationIDs = self.reviewAssociationIDs.filter { id in self.reviewAssociations.contains(where: { $0.id == id }) }
             if self.reviewApps.isEmpty { self.showReview = false }
-            self.history.record(module: .uninstaller, action: L("Remove apps"), outcome: outcome)
+            self.history.record(module: .uninstaller, actionKey: "Remove apps", outcome: outcome)
             SoundPlayer.playSuccess(enabled: self.settings.soundEnabled, name: self.settings.soundName)
             if outcome.failureCount > 0 { self.toast(L("Some items could not be removed")) }
         }
@@ -333,7 +333,7 @@ final class UninstallerModel: ObservableObject {
         confirmation = ConfirmationRequest(
             title: L("Move %d items to the Trash?", chosen.count),
             message: L("These items will be moved to the Trash. You can restore them from the Trash until you empty it."),
-            actionLabel: L("Move to Trash"),
+            actionLabelKey: "Move to Trash",
             isPermanent: false,
             itemCount: chosen.count,
             byteCount: chosen.reduce(0) { $0 + $1.size },
@@ -358,7 +358,7 @@ final class UninstallerModel: ObservableObject {
                 self.leftoverReport = report
             }
             self.leftoverSelectedIDs = []
-            self.history.record(module: .uninstaller, action: L("Leftovers from removed apps"), outcome: outcome)
+            self.history.record(module: .uninstaller, actionKey: "Leftovers from removed apps", outcome: outcome)
             SoundPlayer.playSuccess(enabled: self.settings.soundEnabled, name: self.settings.soundName)
         }
     }

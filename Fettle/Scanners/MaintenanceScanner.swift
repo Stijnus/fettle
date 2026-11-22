@@ -50,7 +50,7 @@ enum MaintenanceScanner {
             )
         }
 
-        notes.append(L("Repair is limited to your own aliases, personal LaunchAgents and confirmed leftovers. System files, live preferences and security settings are never changed."))
+        notes.append(L("Repair covers your broken aliases, damaged preferences, invalid personal LaunchAgents and confirmed leftovers. System files, live preferences and security settings are never changed."))
         notes.append(L("Only one leftover location was found, so this stays informational."))
         return finish(started: started, items: items, skipped: skipped, notes: notes)
     }

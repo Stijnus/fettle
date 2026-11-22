@@ -132,7 +132,7 @@ final class PrivacyModel: ObservableObject {
         confirmation = ConfirmationRequest(
             title: L("Clear %d browser items?", chosen.count),
             message: message,
-            actionLabel: L("Clear"),
+            actionLabelKey: "Clear",
             isPermanent: false,
             itemCount: chosen.count,
             byteCount: chosen.reduce(0) { $0 + $1.size },
@@ -193,7 +193,7 @@ final class PrivacyModel: ObservableObject {
                 self.report = current
             }
             self.selectedIDs = []
-            self.history.record(module: .privacy, action: L("Clear browser data"), outcome: combined)
+            self.history.record(module: .privacy, actionKey: "Clear browser data", outcome: combined)
             SoundPlayer.playSuccess(enabled: self.settings.soundEnabled, name: self.settings.soundName)
             if combined.failureCount > 0 { self.toast(L("One or more browser files could not be cleared. Quit the browser and try again.")) }
         }

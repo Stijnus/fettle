@@ -217,7 +217,7 @@ final class LoginItemsModel: ObservableObject {
             message: target
                 ? L("This loads the agent now and lets it start at login.")
                 : L("This stops the agent now and prevents it from starting at login. You can turn it back on here."),
-            actionLabel: target ? L("Enable") : L("Disable"),
+            actionLabelKey: target ? "Enable" : "Disable",
             isPermanent: false,
             itemCount: 1,
             byteCount: 0,
@@ -234,7 +234,7 @@ final class LoginItemsModel: ObservableObject {
         let itemResult = ItemResult(path: record.path ?? record.identifier, name: record.name, category: .loginItem, success: result.0, skipped: !result.0, message: result.0 ? nil : result.1, bytes: 0)
         let outcome = OperationOutcome(title: L("Login item changed"), message: result.1, results: [itemResult], bytes: 0)
         self.outcome = outcome
-        history.record(module: .loginItems, action: enable ? L("Enable") : L("Disable"), outcome: outcome)
+        history.record(module: .loginItems, actionKey: enable ? "Enable" : "Disable", outcome: outcome)
         SoundPlayer.playSuccess(enabled: settings.soundEnabled, name: settings.soundName)
         Task {
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -348,7 +348,7 @@ final class PermanentDeleteModel: ObservableObject {
         confirmation = ConfirmationRequest(
             title: L("Permanently delete %d items?", items.count),
             message: L("These paths will be erased immediately. There is no Trash and no undo.") + "\n\n" + L("On SSDs, APFS snapshots, Time Machine backups and cloud copies can retain data even after a file is removed. Fettle cannot guarantee physical erasure."),
-            actionLabel: L("Delete Permanently"),
+            actionLabelKey: "Delete Permanently",
             isPermanent: true,
             requiresTyping: typing,
             itemCount: items.count,
@@ -369,7 +369,7 @@ final class PermanentDeleteModel: ObservableObject {
             self.outcome = outcome
             let succeeded = Set(outcome.results.filter { $0.success }.map { $0.path })
             self.items.removeAll { succeeded.contains($0.path) }
-            self.history.record(module: .permanentDelete, action: L("Permanent Delete"), outcome: outcome, movedToTrash: false)
+            self.history.record(module: .permanentDelete, actionKey: "Permanent Delete", outcome: outcome, movedToTrash: false)
             SoundPlayer.playSuccess(enabled: self.settings.soundEnabled, name: self.settings.soundName)
             if outcome.failureCount > 0 { self.toast(L("Some items could not be deleted")) }
         }

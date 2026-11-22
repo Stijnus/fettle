@@ -143,7 +143,7 @@ struct MenuBarPopoverView: View {
             }
         }
         .padding(9)
-        .background(RoundedRectangle(cornerRadius: 10).fill(color(for: health.highestSeverity).opacity(0.08)))
+        .background(RoundedRectangle(cornerRadius: 10).fill((health.highestSeverity.map(color(for:)) ?? .secondary).opacity(0.08)))
     }
 
     private var statusCard: some View {
@@ -201,10 +201,12 @@ struct MenuBarPopoverView: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon).font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.accent)
-                Text(title).font(.system(size: 9, weight: .medium)).lineLimit(1)
+                Text(title).font(.system(size: 9, weight: .medium))
+                    .multilineTextAlignment(.center).lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .frame(height: 46)
             .background(RoundedRectangle(cornerRadius: 9).fill(Palette.card(scheme)))
             .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Palette.stroke(scheme), lineWidth: 1))
         }

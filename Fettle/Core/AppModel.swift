@@ -68,13 +68,14 @@ final class AppModel: ObservableObject {
     @Published var toast: ToastMessage?
     @Published var updateState: UpdateUIState = .idle
     @Published var diskUsage: VolumeInfo?
-    @Published var trashBytesLive: Int64 = 0
+    @Published private(set) var trashBytesLive: Int64?
     @Published var hasScannedThisSession = false
     @Published var loginItemStatus: String = ""
     @Published var loginItemError: String?
 
     private var globalTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
+    private var latestTrashRequest = UUID()
     private var trashTask: Task<Void, Never>?
     private var mountObserver: NSObjectProtocol?
     private var unmountObserver: NSObjectProtocol?
@@ -319,9 +320,9 @@ final class AppModel: ObservableObject {
     var summaries: [ModuleSummary] {
         [
             ModuleSummary(id: .disk, bytes: disk.estimatedBytes, itemCount: disk.items.filter { $0.category != .trash && !$0.isInformational && !$0.isProtected }.count, lastScan: disk.lastScan, note: disk.report == nil ? L("No scan results yet.") : disk.report?.coverageNote),
-            ModuleSummary(id: .maintenance, bytes: maintenance.estimatedBytes, itemCount: maintenance.items.filter { !$0.isInformational }.count, lastScan: maintenance.lastScan, note: maintenance.report == nil ? L("No scan results yet.") : maintenance.report?.coverageNote),
+            ModuleSummary(id: .maintenance, bytes: maintenance.estimatedBytes, itemCount: maintenance.findingCount, lastScan: maintenance.lastScan, note: maintenance.report == nil ? L("No scan results yet.") : maintenance.report?.coverageNote),
             ModuleSummary(id: .uninstaller, bytes: uninstaller.apps.reduce(0) { $0 + $1.size }, itemCount: uninstaller.apps.count, lastScan: uninstaller.lastScan, note: uninstaller.apps.isEmpty ? L("No scan results yet.") : nil),
-            ModuleSummary(id: .updater, bytes: 0, itemCount: updater.availableRecords.count, lastScan: updater.lastScan, note: updater.lastScan == nil ? L("No scan results yet.") : L("%d updates available", updater.availableRecords.count)),
+            ModuleSummary(id: .updater, bytes: 0, itemCount: updater.availableRecords.count, lastScan: updater.lastScan, note: updater.lastScan == nil ? L("No scan results yet.") : Fmt.availableUpdates(updater.availableRecords.count)),
             ModuleSummary(id: .privacy, bytes: privacy.items.filter { !$0.isInformational && !$0.isProtected }.reduce(0) { $0 + $1.size }, itemCount: privacy.items.filter { $0.category != .recentItems && !$0.isInformational }.count, lastScan: privacy.lastScan, note: privacy.report == nil ? L("No scan results yet.") : privacy.report?.coverageNote),
             ModuleSummary(id: .health, bytes: 0, itemCount: health.activeAlerts.count, lastScan: health.snapshot?.readAt, note: health.snapshot == nil ? L("Reading this Mac…") : (health.activeAlerts.isEmpty ? L("All clear") : health.statusHeadline)),
             ModuleSummary(id: .extensions, bytes: 0, itemCount: extensions.records.count, lastScan: extensions.lastScan, note: extensions.lastScan == nil ? L("No scan results yet.") : nil),
@@ -335,9 +336,13 @@ final class AppModel: ObservableObject {
     }
 
     func refreshLiveTrashSize() async {
-        let measured = await Task.detached(priority: .utility) {
-            FileSafety.directorySize(AppPaths.trash).size
+        let request = UUID()
+        latestTrashRequest = request
+        let measured: Int64? = await Task.detached(priority: .utility) {
+            let result = FileSafety.directorySize(AppPaths.trash)
+            return result.complete ? result.size : nil
         }.value
+        guard request == latestTrashRequest else { return }
         trashBytesLive = measured
         health.trashBytes = measured
     }

@@ -462,10 +462,24 @@ enum SelfTest {
             try MainActor.assumeIsolated {
                 let store = HistoryStore(fileURL: historyURL)
                 let outcome = OperationOutcome(title: "Test", message: "Test", results: [ItemResult(path: "/tmp/x", name: "x", category: .cache, success: true, bytes: 10)], bytes: 10)
-                store.record(module: .disk, action: "Test", outcome: outcome)
+                let originalLanguage = L10n.languageCode
+                defer { L10n.languageCode = originalLanguage }
+                L10n.apply(language: .dutch)
+                store.record(module: .disk, actionKey: "Move to Trash", outcome: outcome)
                 let reloaded = HistoryStore(fileURL: historyURL)
                 try expect(reloaded.events.count == 1, "history did not persist")
-                try expect(reloaded.events.first?.bytes == 10, "history bytes wrong")
+                guard var event = reloaded.events.first else { throw TestFailure.failed("missing history event") }
+                try expect(event.bytes == 10, "history bytes wrong")
+                try expect(event.action == "Move to Trash" && event.outcome == "Completed", "history stored translated labels")
+                try expect(event.displayAction == "Naar prullenmand" && event.displayOutcome == "Voltooid", "Dutch history labels wrong")
+                event.action = "Apps verwijderen"
+                event.outcome = "Sommige items konden niet worden verwijderd"
+                store.record(event)
+                L10n.apply(language: .english)
+                let legacy = HistoryStore(fileURL: historyURL).events.first { $0.action == "Apps verwijderen" }
+                try expect(legacy?.displayAction == "Remove apps" && legacy?.displayOutcome == "Some items could not be removed", "legacy history did not follow language")
+                event.action = "Custom operation"
+                try expect(event.displayAction == event.action, "unknown history label was lost")
             }
             return "persisted"
         }
@@ -621,14 +635,16 @@ enum SelfTest {
 
         runner.test("Dutch and English interface strings resolve") {
             let previous = L10n.languageCode
+            defer { L10n.languageCode = previous }
             L10n.languageCode = "en"
+            try expect(Fmt.availableUpdates(1) == "1 update available" && Fmt.availableUpdates(2) == "2 updates available", "English update count wrong")
             try expect(L("Scan") == "Scan", "English Scan wrong")
             L10n.languageCode = "nl"
             try expect(L("Scan") == "Scannen", "Dutch Scan wrong")
             try expect(L("Disk Cleanup") == "Schijfopruiming", "Dutch Disk Cleanup wrong")
             try expect(L("Clearing this data will sign you out of websites.") == "Deze gegevens wissen logt je uit bij websites.", "Dutch sign-out warning missing")
             try expect(L("Clearing history removes the list of sites you visited. You stay signed in.") == "Geschiedenis wissen verwijdert de lijst met bezochte websites. Je blijft ingelogd.", "Dutch history note missing")
-            L10n.languageCode = previous
+            try expect(Fmt.availableUpdates(1) == "1 update beschikbaar" && Fmt.availableUpdates(0) == "0 updates beschikbaar", "Dutch update count wrong")
             return "both languages resolve"
         }
 
@@ -692,6 +708,7 @@ enum SelfTest {
                 let historyURL = paths.home.appendingPathComponent("Library/Application Support/Fettle/alert-history.json")
                 let activityURL = paths.home.appendingPathComponent("Library/Application Support/Fettle/alert-activity.json")
                 let model = HealthModel(settings: settings, cleanupHistory: HistoryStore(fileURL: historyURL), activity: HealthHistoryStore(fileURL: activityURL))
+                try expect(model.highestSeverity == nil, "unmeasured health reported a severity")
                 model.trashBytes = 5_000_000_000
 
                 var snapshot = HealthSnapshot()

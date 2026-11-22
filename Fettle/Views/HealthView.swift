@@ -125,17 +125,11 @@ struct HealthView: View {
 
     private var healthPill: some View {
         let severity = model.highestSeverity
-        let color: Color = {
-            switch severity {
-            case .critical: return Palette.coral
-            case .warning: return Palette.amber
-            case .good: return Palette.green
-            case .info: return Palette.blue
-            }
-        }()
+        let color = severity.map(self.color(for:)) ?? .secondary
+        let title = severity.map { $0 == .good ? L("All clear") : $0.title } ?? L("Reading this Mac…")
         return HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
-            Text(severity == .good ? L("All clear") : severity.title)
+            Text(title)
                 .font(.system(size: 9.5, weight: .semibold))
         }
         .foregroundStyle(color)

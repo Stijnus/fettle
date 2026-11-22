@@ -235,20 +235,23 @@ struct PrivacyView: View {
     private var recentStrip: some View {
         HStack(spacing: 12) {
             Image(systemName: "clock.fill").foregroundStyle(Palette.amber).font(.system(size: 15))
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(L("Recent items")).font(.system(size: 11.5, weight: .semibold))
                 Text(L("Recent items are managed by macOS. Open Finder or the Apple menu to review and clear them."))
-                    .font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(2)
+                    .font(.system(size: 9.5)).foregroundStyle(.secondary)
+                if !model.recentItems.isEmpty {
+                    Text(model.recentItems.map { "\($0.name) \($0.count)" }.joined(separator: " · "))
+                        .font(.system(size: 9.5)).foregroundStyle(.secondary)
+                }
             }
-            Spacer()
-            if !model.recentItems.isEmpty {
-                Text(model.recentItems.map { "\($0.name) \($0.count)" }.joined(separator: " · "))
-                    .font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            VStack(alignment: .trailing, spacing: 4) {
+                Button(L("Open Finder")) { refreshOnReturn = true; SystemActions.openFinderHome() }
+                Button(L("Open Desktop & Dock Settings")) { refreshOnReturn = true; SystemActions.openSettings(.desktopDock) }
             }
-            Button(L("Open Finder")) { refreshOnReturn = true; SystemActions.openFinderHome() }
-                .buttonStyle(.bordered).controlSize(.small)
-            Button(L("Open Desktop & Dock Settings")) { refreshOnReturn = true; SystemActions.openSettings(.desktopDock) }
-                .buttonStyle(.bordered).controlSize(.small)
+            .buttonStyle(.bordered).controlSize(.small)
+            .fixedSize()
         }
         .padding(11)
         .background(RoundedRectangle(cornerRadius: 12).fill(Palette.amber.opacity(0.055)))
@@ -257,9 +260,6 @@ struct PrivacyView: View {
 
     private var resultsList: some View {
         List(selection: $model.selectedIDs) {
-            if visible.isEmpty {
-                Text(L("No browser data was found.")).font(.system(size: 12)).foregroundStyle(.secondary)
-            }
             ForEach(locations.indices, id: \.self) { index in
                 let location = locations[index]
                 Section {

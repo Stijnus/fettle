@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OverviewView: View {
+    @ObservedObject var health: HealthModel
     @EnvironmentObject private var app: AppModel
     @Environment(\.colorScheme) private var scheme
     @State private var showClearHistory = false
@@ -126,7 +127,7 @@ struct OverviewView: View {
             VStack(alignment: .leading, spacing: 0) {
                 heroFact(icon: "externaldrive", label: L("Actual free space"), value: app.diskUsage.map { Fmt.bytes($0.available) } ?? "—", tint: Palette.violet)
                 Divider().opacity(0.4)
-                heroFact(icon: "trash.circle", label: L("Trash"), value: Fmt.bytes(app.trashBytesLive), tint: Palette.amber)
+                heroFact(icon: "trash.circle", label: L("Trash"), value: app.trashBytesLive.map(Fmt.bytes) ?? "—", tint: Palette.amber)
                 Divider().opacity(0.4)
                 heroFact(icon: "clock", label: L("Last scan"), value: app.lastScanDate.map { Fmt.relativeDate($0) } ?? L("Never scanned"), tint: Palette.blue)
                     .help(app.lastScanDate.map { Fmt.dateTime($0) } ?? "")
@@ -167,11 +168,11 @@ struct OverviewView: View {
                     .frame(width: 7, height: 7)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(L("Mac Health")).font(.system(size: 11, weight: .semibold))
-                    Text(app.health.statusHeadline).font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1)
+                    Text(health.statusHeadline).font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if let snapshot = app.health.snapshot {
+            if let snapshot = health.snapshot {
                 healthMini(L("CPU"), snapshot.cpu.warmedUp ? HealthFormat.percent(snapshot.cpu.usageFraction) : "—", Palette.blue)
                 healthMini(L("Memory"), HealthFormat.percent(snapshot.memory.usedFraction), Palette.violet)
                 healthMini(L("Disk free"), snapshot.rootVolume.map { Fmt.bytes($0.availableBytes) } ?? "—", Palette.accent)
@@ -193,7 +194,8 @@ struct OverviewView: View {
     }
 
     private var healthColor: Color {
-        switch app.health.highestSeverity {
+        switch health.highestSeverity {
+        case nil: return .secondary
         case .critical: return Palette.coral
         case .warning: return Palette.amber
         case .good: return Palette.green
@@ -262,14 +264,14 @@ struct OverviewView: View {
                             HStack(spacing: 10) {
                                 IconTile(symbol: event.module.symbol, tint: Palette.accent, size: 28)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(event.action).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
+                                    Text(event.displayAction).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
                                     Text("\(event.module.title) · \(Fmt.dateTime(event.date))")
                                         .font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1)
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 1) {
                                     Text(Fmt.bytes(event.bytes)).font(.system(size: 10.5, weight: .semibold).monospacedDigit())
-                                    Text(event.outcome).font(.system(size: 9)).foregroundStyle(.secondary)
+                                    Text(event.displayOutcome).font(.system(size: 9)).foregroundStyle(.secondary)
                                 }
                             }
                             .padding(.vertical, 6)
@@ -278,7 +280,7 @@ struct OverviewView: View {
                     }
                 }
             } else {
-                if app.health.activity.samples.isEmpty {
+                if health.activity.samples.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(L("No activity readings yet")).font(.system(size: 13, weight: .semibold))
                         Text(L("Mac Health keeps one numeric reading per minute while Fettle is open.")).font(.system(size: 11)).foregroundStyle(.secondary)
@@ -287,7 +289,7 @@ struct OverviewView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                 } else {
                     VStack(spacing: 0) {
-                        ForEach(app.health.activity.latest(8)) { sample in
+                        ForEach(health.activity.latest(8)) { sample in
                             HStack(spacing: 10) {
                                 IconTile(symbol: "waveform.path.ecg", tint: Palette.blue, size: 28)
                                 VStack(alignment: .leading, spacing: 1) {
@@ -305,7 +307,7 @@ struct OverviewView: View {
                             Divider().opacity(0.35)
                         }
                     }
-                    Button(L("Open Activity History")) { app.select(.health); app.health.page = .activity }
+                    Button(L("Open Activity History")) { app.select(.health); health.page = .activity }
                         .buttonStyle(.borderless)
                         .font(.system(size: 9.5))
                 }
@@ -317,10 +319,10 @@ struct OverviewView: View {
     private var quickActions: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionTitle(title: L("Quick actions"), subtitle: nil)
-            quickAction(icon: "waveform.path.ecg", title: L("Open Mac Health"), detail: app.health.statusHeadline, module: .health)
+            quickAction(icon: "waveform.path.ecg", title: L("Open Mac Health"), detail: health.statusHeadline, module: .health)
             quickAction(icon: "arrow.triangle.2.circlepath", title: L("Check app updates"), detail: app.updater.lastScan == nil ? L("Not checked yet") : L("%d available", app.updater.availableRecords.count), module: .updater)
             quickAction(icon: "internaldrive", title: L("Open Disk Cleanup"), detail: L("Caches, logs and Trash"), module: .disk)
-            quickAction(icon: "trash", title: L("Review Trash"), detail: Fmt.bytes(app.trashBytesLive), module: .disk)
+            quickAction(icon: "trash", title: L("Review Trash"), detail: app.trashBytesLive.map(Fmt.bytes) ?? "—", module: .disk)
             quickAction(icon: "person.badge.key", title: L("Check login items"), detail: "\(app.loginItems.records.count)", module: .loginItems)
             quickAction(icon: "xmark.bin", title: L("Permanent delete a file"), detail: L("A separate, deliberate erase."), module: .permanentDelete)
         }
@@ -391,7 +393,8 @@ struct ModuleStatusCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(module.title).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(.primary)
                     if let note = summary.note {
-                        Text(note).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                        Text(note).font(.system(size: 10)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     } else if module == .power {
                         Text(L("Read-only, no changes")).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
                     } else if summary.bytes > 0 {

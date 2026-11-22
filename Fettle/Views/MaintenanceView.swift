@@ -16,7 +16,7 @@ struct MaintenanceView: View {
             ModuleHeader(
                 module: .maintenance,
                 title: L("Maintenance"),
-                message: L("Fettle checks broken aliases, invalid personal startup agents and leftovers that belong to apps which are no longer installed. Uncertain items stay informational.")
+                message: L("Fettle checks broken aliases, damaged preferences, invalid personal startup agents and leftovers from uninstalled apps. Uncertain items stay informational.")
             ) {
                 Button {
                     model.startScan()
@@ -43,13 +43,13 @@ struct MaintenanceView: View {
                     .padding(.bottom, 10)
             }
 
-            if let report = model.report {
-                stats(report)
+            if model.report != nil {
+                stats
                     .padding(.horizontal, 24)
                     .padding(.bottom, 10)
                 InfoNote(
                     icon: "shield.lefthalf.filled",
-                    title: L("Repair is limited to your own aliases, personal LaunchAgents and confirmed leftovers."),
+                    title: L("Repair covers your broken aliases, damaged preferences, invalid personal LaunchAgents and confirmed leftovers."),
                     message: L("System files, live preferences and security settings are never changed.")
                 )
                 .padding(.horizontal, 24)
@@ -67,7 +67,7 @@ struct MaintenanceView: View {
             } else if !model.isScanning {
                 EmptyStateView(
                     icon: "wrench.and.screwdriver",
-                    title: L("Run a check to look for aliases, startup agents and confirmed leftovers."),
+                    title: L("Check for broken aliases, damaged preferences, invalid startup agents and confirmed leftovers."),
                     message: L("Scans are read-only. Nothing is selected until you choose a finding to repair."),
                     actionTitle: L("Run maintenance check"),
                     action: { model.startScan() }
@@ -104,15 +104,15 @@ struct MaintenanceView: View {
         }
     }
 
-    private func stats(_ report: ScanReport) -> some View {
-        let fixable = model.brokenAliases.count + model.invalidAgents.count + model.leftovers.count
-        return SummaryCard(
+    private var stats: some View {
+        SummaryCard(
             label: L("Findings"),
-            value: "\(fixable)",
-            caption: Fmt.bytes(model.leftovers.reduce(0) { $0 + $1.size }),
+            value: "\(model.findingCount)",
+            caption: Fmt.bytes(model.estimatedBytes),
             facts: [
                 SummaryFact(icon: "link.badge.plus", label: L("Broken aliases"), value: "\(model.brokenAliases.count)", tint: Palette.amber, help: L("User-owned links only")),
                 SummaryFact(icon: "bolt.slash", label: L("Invalid startup agents"), value: "\(model.invalidAgents.count)", tint: Palette.coral, help: L("Personal LaunchAgents")),
+                SummaryFact(icon: "doc.badge.gearshape", label: L("Broken preferences"), value: "\(model.brokenPreferences.count)", tint: Palette.blue),
                 SummaryFact(icon: "questionmark.folder", label: L("Confirmed leftovers"), value: "\(model.leftovers.count)", tint: Palette.violet),
                 SummaryFact(icon: "info.circle", label: L("Uncertain items"), value: "\(model.uncertain.count)", tint: .secondary, help: L("Kept informational"))
             ]

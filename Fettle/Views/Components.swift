@@ -874,7 +874,7 @@ struct ConfirmationSheet: View {
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button(action: onConfirm) {
-                    Text(request.actionLabel)
+                    Text(L(request.actionLabelKey))
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(request.isPermanent ? Palette.coral : Palette.accent)

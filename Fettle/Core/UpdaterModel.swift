@@ -280,7 +280,7 @@ final class UpdaterModel: ObservableObject {
             finishedAt: Date()
         )
         outcome = operation
-        history.record(module: .updater, action: L("Open app updates"), outcome: operation, movedToTrash: false)
+        history.record(module: .updater, actionKey: "Open app updates", outcome: operation, movedToTrash: false)
         if failure > 0 {
             toast(L("Some update pages could not be opened"))
         } else {
