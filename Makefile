@@ -11,7 +11,7 @@ DERIVED := .build-release
 APP := build/Fettle.app
 BUILT := $(DERIVED)/Build/Products/$(CONFIG)/Fettle.app
 
-.PHONY: all build test clean icon release
+.PHONY: all build test clean icon release art
 
 all: build
 
@@ -38,3 +38,8 @@ icon:
 # Signed app, DMG, zip and SHA-256 checksums in dist/. See scripts/release.sh.
 release:
 	./scripts/release.sh
+
+# Re-capture the README screenshots and redraw the brand assets.
+# Needs a logged-in GUI session and Pillow; your settings are restored afterwards.
+art:
+	./scripts/capture_screenshots.sh
