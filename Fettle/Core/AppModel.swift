@@ -44,6 +44,7 @@ final class AppModel: ObservableObject {
     let uninstaller: UninstallerModel
     let updater: UpdaterModel
     let power: PowerModel
+    let security: SecurityModel
     let extensions: ExtensionsModel
     let loginItems: LoginItemsModel
     let privacy: PrivacyModel
@@ -93,6 +94,7 @@ final class AppModel: ObservableObject {
         self.uninstaller = UninstallerModel(settings: settings, ignoreList: ignore, history: history)
         self.updater = UpdaterModel(settings: settings, ignoreList: ignore, history: history)
         self.power = PowerModel()
+        self.security = SecurityModel()
         self.extensions = ExtensionsModel(settings: settings, ignoreList: ignore)
         self.loginItems = LoginItemsModel(settings: settings, history: history)
         self.privacy = PrivacyModel(settings: settings, ignoreList: ignore, history: history)
@@ -110,6 +112,14 @@ final class AppModel: ObservableObject {
                     self?.health.applySettings()
                 }
             }
+            .store(in: &cancellables)
+
+        // Only the attention count feeds the sidebar badge and Overview card,
+        // so live socket refreshes do not redraw the whole window.
+        security.$snapshot
+            .map { $0.map { "\($0.attentionCount)|\($0.readAt.timeIntervalSince1970)" } }
+            .removeDuplicates()
+            .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
 
         history.objectWillChange
@@ -210,6 +220,7 @@ final class AppModel: ObservableObject {
         case .loginItems: loginItems.startScan()
         case .health: Task { await health.refreshNow() }
         case .power: Task { await power.refresh() }
+        case .security: Task { await security.refresh() }
         case .permanentDelete: permanentDelete.toast(L("Permanent Delete has no scan. Add files to review them."))
         case .overview: startGlobalScan()
         }
@@ -248,6 +259,7 @@ final class AppModel: ObservableObject {
         extensions.startScan()
         loginItems.startScan()
         Task { await power.refresh() }
+        Task { await security.refresh() }
         Task { await health.refreshNow() }
         globalTask?.cancel()
         globalTask = Task {
@@ -327,6 +339,7 @@ final class AppModel: ObservableObject {
             ModuleSummary(id: .health, bytes: 0, itemCount: health.activeAlerts.count, lastScan: health.snapshot?.readAt, note: health.snapshot == nil ? L("Reading this Mac…") : (health.activeAlerts.isEmpty ? L("All clear") : health.statusHeadline)),
             ModuleSummary(id: .extensions, bytes: 0, itemCount: extensions.records.count, lastScan: extensions.lastScan, note: extensions.lastScan == nil ? L("No scan results yet.") : nil),
             ModuleSummary(id: .loginItems, bytes: 0, itemCount: loginItems.records.count, lastScan: loginItems.lastScan, note: loginItems.lastScan == nil ? L("No scan results yet.") : (loginItems.readableBackgroundItems ? nil : L("Partial scan"))),
+            ModuleSummary(id: .security, bytes: 0, itemCount: security.snapshot?.attentionCount ?? 0, lastScan: security.snapshot?.readAt, note: security.snapshot.map { $0.attentionCount == 0 ? L("All protections on") : ($0.attentionCount == 1 ? L("1 protection needs attention") : L("%d protections need attention", $0.attentionCount)) } ?? L("Read-only")),
             ModuleSummary(id: .power, bytes: 0, itemCount: power.snapshot?.settings.count ?? 0, lastScan: power.snapshot?.readAt, note: power.snapshot == nil ? L("Read-only") : nil),
         ]
     }

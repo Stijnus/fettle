@@ -294,7 +294,7 @@ extension ModuleID {
     /// The colour that stands for this module in headers, cards and summaries.
     var tint: Color {
         switch self {
-        case .overview, .health, .disk, .loginItems: return Palette.accent
+        case .overview, .health, .disk, .loginItems, .security: return Palette.accent
         case .maintenance: return Palette.amber
         case .uninstaller: return Palette.blue
         case .updater, .power: return Palette.green

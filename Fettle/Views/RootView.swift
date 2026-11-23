@@ -231,6 +231,9 @@ struct SidebarView: View {
             return app.loginItems.records.isEmpty ? nil : "\(app.loginItems.records.count)"
         case .health:
             return app.health.activeAlerts.isEmpty ? nil : "\(app.health.activeAlerts.count)"
+        case .security:
+            let count = app.security.snapshot?.attentionCount ?? 0
+            return count > 0 ? "\(count)" : nil
         case .power, .permanentDelete:
             return nil
         }
@@ -306,6 +309,8 @@ struct ModuleDetailView: View {
                 UpdaterView(model: app.updater)
             case .power:
                 PowerView(model: app.power)
+            case .security:
+                SecurityView(model: app.security)
             case .extensions:
                 ExtensionsView(model: app.extensions)
             case .loginItems:

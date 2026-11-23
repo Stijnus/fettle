@@ -5,7 +5,7 @@
 <p align="center">
   <b>Care for your Mac, calmly.</b><br>
   A native macOS care utility: disk cleanup, maintenance, uninstaller, app updates,<br>
-  privacy cleanup and live Mac Health in one app.
+  privacy cleanup, a security check-up and live Mac Health in one app.
 </p>
 
 <p align="center">
@@ -35,14 +35,14 @@
 ## Contents
 
 [Screens](#screens) · [What's inside](#whats-inside) · [Disk Cleanup](#disk-cleanup) ·
-[Mac Health](#mac-health) · [App Updater](#app-updater) · [Settings](#settings) · [Safety model](#safety-model) ·
+[Mac Health](#mac-health) · [Security](#security) · [App Updater](#app-updater) · [Settings](#settings) · [Safety model](#safety-model) ·
 [Install](#install) · [Build from source](#build-from-source) · [Tests](#tests) ·
 [Limitations](#limitations) · [Development](#development) · [Project layout](#project-layout) ·
 [License](#license)
 
 ## Screens
 
-Fettle is one window with a sidebar: an overview, ten care tools and a menu bar
+Fettle is one window with a sidebar: an overview, eleven care tools and a menu bar
 popover. Every screen is a real capture of the built app in light appearance — the
 Login Items and Maintenance lists use a sample account so no personal paths appear.
 A complete dark appearance and English/Dutch interface strings ship too.
@@ -68,6 +68,11 @@ A complete dark appearance and English/Dutch interface strings ship too.
 | :---: | :---: |
 | <a href="docs/screenshots/extensions.webp"><img src="docs/screenshots/extensions.webp" alt="Extensions listing system extensions, Safari extensions and browser add-ons" width="420"></a> | <a href="docs/screenshots/login-items.webp"><img src="docs/screenshots/login-items.webp" alt="Login Items listing user LaunchAgents with enable and disable" width="420"></a> |
 | <sub>System extensions, Safari extensions and browser add-ons.</sub> | <sub>User LaunchAgents are reversible; system daemons are never touched.</sub> |
+
+| Security |
+| :---: |
+| <a href="docs/screenshots/security.webp"><img src="docs/screenshots/security.webp" alt="Security page with firewall, FileVault, Gatekeeper, XProtect and live network activity" width="600"></a> |
+| <sub>Built-in protections and live network activity, read-only — not an antivirus.</sub> |
 
 | Sleep & Power | Permanent Delete |
 | :---: | :---: |
@@ -95,6 +100,7 @@ The name is the promise: *in fine fettle* means in good health and good conditio
 | **Login Items** | User LaunchAgents with reversible enable/disable through `launchctl`, plus the macOS background items `sfltool` can report. System daemons are never modified. |
 | **Privacy** | Browser cache, cookies/site data, browsing history and download history by browser and profile, with sign-out explanations. Download files are preserved and passwords are never read. |
 | **Sleep & Power** | A read-only `pmset` view of battery and power-adapter settings, differences, sleep/recovery files, a link to the live Battery page and routes into System Settings. |
+| **Security** | A read-only check of the firewall (state, stealth mode, app rules), FileVault, System Integrity Protection, Gatekeeper, XProtect versions and automatic security updates, plus sharing services and a live view of your apps' listening ports and TCP connections. Each item links to its System Settings page. Fettle is not an antivirus and never changes a security setting. |
 | **Permanent Delete** | A separate drag-and-drop screen: exact paths and sizes, a typed confirmation, per-item results, and a clear warning about SSD wear levelling, APFS snapshots, backups and cloud copies. |
 | **Menu bar** | A popover with live readings, Scan, Quit Selected Apps, Eject All, settings and an at-a-glance battery/drive/busiest-process summary. Background mode keeps Fettle available after the window closes. |
 
@@ -130,6 +136,26 @@ network shows counters, addresses and live rates.
   gaps where Fettle was not running, and never stores process names.
 - An opt-in Accessibility check reports apps that do not respond and tells a slow
   launch apart from a confirmed timeout.
+
+## Security
+
+A read-only security check-up. Fettle shows what macOS already protects and links
+straight to the System Settings page for anything that is off. It never changes a
+setting, needs no administrator password, and is not an antivirus.
+
+<a href="docs/screenshots/security.webp"><img src="docs/screenshots/security.webp" alt="Security page: all protections on, built-in protections grid and network activity" width="100%"></a>
+
+- **Firewall** — on/off, stealth mode, signed-software allowance and per-app allow/block rules.
+- **FileVault, System Integrity Protection and Gatekeeper** — each with a plain explanation.
+- **XProtect** — definitions and Remediator versions and when they last updated; flagged after 90 days without an update.
+- **Automatic updates** — security responses, macOS updates and App Store updates.
+- **Sharing services** — Remote Login, Screen Sharing, File Sharing, Remote Management and AirPlay Receiver.
+- **Live network activity** — your apps' listening ports (rated *This Mac only*, *Nearby devices* or *Network*) and active TCP connections, refreshed every 5 seconds while the page is open, with new listeners marked.
+
+Why no virus scanner: macOS already runs XProtect, XProtect Remediator and
+Gatekeeper, and real-time file scanning or per-app traffic filtering needs Apple's
+Endpoint Security and Network Extension entitlements. Fettle reports the built-in
+protection honestly instead of adding a second, weaker one.
 
 ## App Updater
 
@@ -280,6 +306,9 @@ exact limits of each macOS interface. The main ones:
   to be registered again; the exact status is always shown.
 - Activity history exists only while Fettle is running; it keeps one numeric reading
   per minute for seven days and never stores process names.
+- Security is read-only and is not an antivirus: no file scanning, blocking or
+  real-time protection. Network activity lists only your own apps' sockets; system
+  services are detected by a local port check instead.
 - Notifications require the user's permission. Official releases can include a signed
   update feed; local builds without a bundled feed need the URL and public key in
   Settings.

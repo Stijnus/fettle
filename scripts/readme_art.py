@@ -100,6 +100,7 @@ WINDOWS: list[WindowSpec] = [
     WindowSpec("login-items", "login-items.png", "Fettle"),
     WindowSpec("privacy", "privacy.png", "Fettle"),
     WindowSpec("sleep-power", "sleep-power.png", "Fettle"),
+    WindowSpec("security", "security.png", "Fettle"),
     WindowSpec("permanent-delete", "permanent-delete.png", "Fettle"),
     WindowSpec("settings", "settings.png", "Settings", 1200, sidebar=False),
     WindowSpec("menu-bar", "menu-bar.png", None, 520, titlebar=False, menu_popover=True, sidebar=False),
