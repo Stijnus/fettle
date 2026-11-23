@@ -224,7 +224,7 @@ struct OverviewView: View {
                     .disabled(app.isGlobalScanning)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                ForEach([ModuleID.health, .disk, .maintenance, .uninstaller, .updater, .privacy, .extensions, .loginItems, .power], id: \.self) { module in
+                ForEach([ModuleID.health, .security, .disk, .maintenance, .uninstaller, .updater, .privacy, .extensions, .loginItems, .power], id: \.self) { module in
                     ModuleStatusCard(module: module, summary: app.summary(for: module)) {
                         app.select(module)
                     }

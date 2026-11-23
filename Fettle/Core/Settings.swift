@@ -434,6 +434,17 @@ enum Fmt {
         return "\(minutes)m \(seconds)s"
     }
 
+    /// "today", "yesterday", "12 days ago" — whole calendar days, in the interface language.
+    static func relativeDay(_ date: Date, now: Date = Date()) -> String {
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0
+        switch days {
+        case ..<1: return L("today")
+        case 1: return L("yesterday")
+        default: return L("%d days ago", days)
+        }
+    }
+
     /// Joins names in the interface language: "A, B and C".
     static func list(_ names: [String]) -> String {
         guard names.count > 1, let last = names.last else { return names.first ?? "" }

@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Modules
 
 enum ModuleID: String, CaseIterable, Identifiable, Codable, Sendable {
-    case overview, health, disk, maintenance, uninstaller, updater, extensions, power, loginItems, privacy, permanentDelete
+    case overview, health, disk, maintenance, uninstaller, updater, extensions, power, security, loginItems, privacy, permanentDelete
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum ModuleID: String, CaseIterable, Identifiable, Codable, Sendable {
         case .uninstaller: return L("Uninstaller")
         case .updater: return L("App Updater")
         case .power: return L("Sleep & Power")
+        case .security: return L("Security")
         case .extensions: return L("Extensions")
         case .loginItems: return L("Login Items")
         case .privacy: return L("Privacy")
@@ -32,6 +33,7 @@ enum ModuleID: String, CaseIterable, Identifiable, Codable, Sendable {
         case .uninstaller: return L("Apps and the files they leave behind")
         case .updater: return L("Available app updates and the Review step")
         case .power: return L("Sleep, battery and power settings, read-only")
+        case .security: return L("Firewall, FileVault, XProtect and network activity, read-only")
         case .extensions: return L("System extensions and browser add-ons")
         case .loginItems: return L("Login items and background agents")
         case .privacy: return L("Browser data and recent items")
@@ -48,6 +50,7 @@ enum ModuleID: String, CaseIterable, Identifiable, Codable, Sendable {
         case .uninstaller: return "trash.square.fill"
         case .updater: return "arrow.triangle.2.circlepath"
         case .power: return "bolt.batteryblock.fill"
+        case .security: return "lock.shield.fill"
         case .extensions: return "puzzlepiece.extension.fill"
         case .loginItems: return "person.badge.key.fill"
         case .privacy: return "hand.raised.fill"
@@ -61,7 +64,7 @@ enum ModuleID: String, CaseIterable, Identifiable, Codable, Sendable {
         case .health: return .monitor
         case .disk, .maintenance: return .care
         case .uninstaller, .updater, .extensions: return .apps
-        case .power, .loginItems, .privacy: return .control
+        case .power, .security, .loginItems, .privacy: return .control
         case .permanentDelete: return .tools
         }
     }
@@ -75,6 +78,7 @@ enum ModuleID: String, CaseIterable, Identifiable, Codable, Sendable {
         case .uninstaller: return 4
         case .updater: return nil
         case .power: return 5
+        case .security: return nil
         case .extensions: return 6
         case .loginItems: return 7
         case .privacy: return 8

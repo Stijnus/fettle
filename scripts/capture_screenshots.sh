@@ -48,6 +48,7 @@ extensions|real|{\"module\":\"extensions\",\"scan\":true,\"delay\":8}
 login-items|demo|{\"module\":\"loginItems\",\"scan\":true,\"delay\":12}
 privacy|real|{\"module\":\"privacy\",\"scan\":true,\"delay\":14}
 sleep-power|real|{\"module\":\"power\",\"delay\":6}
+security|real|{\"module\":\"security\",\"delay\":7}
 permanent-delete|real|{\"module\":\"permanentDelete\",\"delay\":6}
 mac-health|real|{\"module\":\"health\",\"page\":\"overview\",\"delay\":9}
 cpu|real|{\"module\":\"health\",\"page\":\"cpu\",\"delay\":8}
@@ -149,7 +150,7 @@ PY
     if [ "$home" = "demo" ]; then
         envs=(FETTLE_HOME="$DEMO_HOME")
     fi
-    env "${envs[@]}" FETTLE_LANG=english FETTLE_APPEARANCE=light "$APP" --ui-preview >/dev/null 2>&1 &
+    env ${envs[@]+"${envs[@]}"} FETTLE_LANG=english FETTLE_APPEARANCE=light "$APP" --ui-preview >/dev/null 2>&1 &
     local pid=$!
     for _ in $(seq 1 $((delay + 30))); do
         [ -f "$out" ] && { sleep 0.4; break; }

@@ -456,6 +456,103 @@ enum SelfTest {
             return "\(snapshot.settings.count) settings"
         }
 
+        runner.test("security parsers read firewall, FileVault, SIP and Gatekeeper") {
+            try expect(SecurityReader.parseFirewallState("Firewall is enabled. (State = 1)") == .init(isOn: true, blocksAll: false), "state 1")
+            try expect(SecurityReader.parseFirewallState("Firewall is disabled. (State = 0)") == .init(isOn: false, blocksAll: false), "state 0")
+            try expect(SecurityReader.parseFirewallState("Firewall is blocking all non-essential incoming connections. (State = 2)") == .init(isOn: true, blocksAll: true), "state 2")
+            try expect(SecurityReader.parseStealthMode("Firewall stealth mode is off") == false, "stealth off")
+            try expect(SecurityReader.parseStealthMode("Firewall stealth mode is on") == true, "stealth on")
+            let signed = SecurityReader.parseAllowSigned("Automatically allow built-in signed software ENABLED.\nAutomatically allow downloaded signed software DISABLED.")
+            try expect(signed.builtIn == true && signed.downloaded == false, "allow signed")
+            let apps = SecurityReader.parseFirewallApps("Total number of apps = 2 \n1 : /Applications/A.app/Contents/MacOS/A \n             (Allow incoming connections)\n2 : /usr/local/bin/tool \n             (Block incoming connections)\n")
+            try expect(apps.count == 2 && apps[0].allowsIncoming && !apps[1].allowsIncoming && apps[0].name == "A", "firewall apps \(apps)")
+            try expect(SecurityReader.parseFileVault("FileVault is On.") == .on, "fv on")
+            try expect(SecurityReader.parseFileVault("FileVault is Off.") == .off, "fv off")
+            try expect(SecurityReader.parseFileVault("FileVault is On.\nEncryption in progress: Percent completed = 12") == .encrypting, "fv encrypting")
+            try expect(SecurityReader.parseSIP("System Integrity Protection status: enabled.") == .enabled, "sip on")
+            try expect(SecurityReader.parseSIP("System Integrity Protection status: disabled.") == .disabled, "sip off")
+            try expect(SecurityReader.parseSIP("System Integrity Protection status: unknown (Custom Configuration).") == .custom, "sip custom")
+            try expect(SecurityReader.parseGatekeeper("assessments enabled") == true && SecurityReader.parseGatekeeper("assessments disabled") == false, "gatekeeper")
+            return "all parsers"
+        }
+
+        runner.test("security lsof parser groups listeners and rates exposure") {
+            let sample = """
+            p987
+            crapportd
+            f12
+            PTCP
+            n*:49160
+            TST=LISTEN
+            TQR=0
+            f13
+            PTCP
+            n*:49160
+            TST=LISTEN
+            f21
+            PTCP
+            n[fe80:b::9c:4caa:a50c:339a]:49162->[fe80:b::14c3:7176:c441:aace]:49153
+            TST=ESTABLISHED
+            p1344
+            cGoogle Chrome H
+            f30
+            PTCP
+            n192.168.68.58:62287->107.170.69.10:443
+            TST=ESTABLISHED
+            f31
+            PTCP
+            n[2a02:1812:1720:c00::5]:51632->[2600:1901:0:9e23::1]:443
+            TST=ESTABLISHED
+            p12647
+            cclaude
+            f40
+            PTCP
+            n127.0.0.1:51614
+            TST=LISTEN
+            p501
+            cControlCenter
+            f7
+            PTCP
+            n*:7000
+            TST=LISTEN
+            """
+            let sockets = SecurityReader.parseLsof(sample)
+            try expect(sockets.count == 7, "parsed \(sockets.count) sockets")
+            try expect(sockets[3].processName == "Google Chrome H" && sockets[3].pid == 1344, "process fields")
+            try expect(sockets[3].remoteAddress == "107.170.69.10" && sockets[3].remotePort == "443", "ipv4 endpoint")
+            try expect(sockets[4].remoteAddress == "2600:1901:0:9e23::1" && sockets[4].localPort == "51632", "ipv6 endpoint")
+            let listeners = SecurityReader.groupListeners(sockets)
+            try expect(listeners.count == 3, "grouped \(listeners.count) listeners")
+            try expect(listeners.filter { $0.exposure == .network }.count == 2, "network exposure")
+            try expect(listeners.contains { $0.exposure == .thisMac && $0.localPort == "51614" }, "loopback exposure")
+            let sharing = SecurityReader.sharingCheck(listeners, openPorts: ["22"])
+            try expect(sharing.value.contains(SecurityReader.sharingService(port: "22") ?? "?"), "ssh from probe")
+            try expect(sharing.value.contains(SecurityReader.sharingService(port: "7000") ?? "?"), "AirPlay from listener")
+            try expect(SecurityReader.sharingCheck([], openPorts: []).status == .good, "nothing open")
+            try expect(SecurityReader.exposure(of: "fe80::1%en0") == .localLink, "link-local")
+            try expect(SecurityReader.parseLsof("").isEmpty, "empty output")
+            return "\(listeners.count) listeners"
+        }
+
+        runner.test("security checks flag updates and stale XProtect") {
+            let off = SecurityReader.updateChecks(softwareUpdate: ["CriticalUpdateInstall": false], commerce: nil)
+            try expect(off.first?.status == .attention, "critical off should need attention")
+            let defaults = SecurityReader.updateChecks(softwareUpdate: nil, commerce: nil)
+            try expect(defaults.first?.status == .good, "missing keys use macOS defaults")
+            let now = Date()
+            let stale = SecurityReader.xprotectCheck(definitions: .init(version: "5000", modified: now.addingTimeInterval(-200 * 86_400)), remediator: nil, now: now)
+            try expect(stale.status == .attention, "stale definitions")
+            let fresh = SecurityReader.xprotectCheck(definitions: .init(version: "5377", modified: now.addingTimeInterval(-3 * 86_400)), remediator: .init(version: "171", modified: now), now: now)
+            try expect(fresh.status == .good && fresh.value.contains("5377") && fresh.value.contains("171"), "fresh definitions")
+            let snapshot = SecurityReader.read()
+            try expect(snapshot.checks.count >= 9, "live read returned \(snapshot.checks.count) checks")
+            let summary = snapshot.checks.map { "\($0.id)=\($0.status.rawValue)" }.joined(separator: ",")
+            let network = SecurityReader.readNetwork()
+            try expect(network.error == nil, network.error ?? "")
+            try expect(network.listeners.count + network.connections.count > 0, "lsof returned no sockets for this user")
+            return "\(summary); \(network.listeners.count) listeners, \(network.connections.count) connections"
+        }
+
         runner.test("history persists and reports outcomes") {
             let historyURL = paths.home.appendingPathComponent("Library/Application Support/Fettle/test-history.json")
             try? FileManager.default.createDirectory(at: historyURL.deletingLastPathComponent(), withIntermediateDirectories: true)
